@@ -1,35 +1,38 @@
 # Document Investigation AI
 
-This Gradio application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can ask questions about their content using the Google Gemini API. Until the output prompt is created, the specific UI output text message located at the right side of the document upload window changes its black colour to a light grey colour. There the LLM output result and the associated evaluation window appears 
+This <i>Gradio</i> application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can ask questions about their content using the Google Gemini API via user input prompts. Until the output prompt is created, the specific UI output text message "Your answer will appear here..." located at the right side of the document upload window changes its black colour to light grey. There the LLM output result and the associated evaluation window appears after it is created.<br>
+If a document with a wrong type shall be uploaded (e.g. png image), an error message appeared to inform the user which kind of document types are allowed.
 
-As a starting point a single script PoC file has generated and a .pdf document about a movie dataset has been added to get a first manual impression of application usage.
-Afterwards, this PoC approach has been transfered to a project level. The project application features a robust architecture, comprehensive exception handling and logging. Additionally, a prompt evaluation has been implemented, that can be monitored by a <i>Datasette</i> call to get the stored evaluation information of an <i>SQLite</i> database. Furthermore, a unit test suite for database handling and some UI workflows as test examples are added.
+As a starting point for this use case, a single script PoC file has been generated. An example .pdf document about a movie dataset has been added to get a first manual impression of application and evaluation usage.
+
+Afterwards, this PoC approach has been transfered to a project level. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. Additionally, a prompt evaluation has been implemented, that can be monitored by a <i>Datasette</i> call to get the stored evaluation information of an <i>SQLite</i> database. Furthermore, a unit test suite for database handling and some UI workflows as test examples are added.
 
 As a prerequisite, you need a Google Gemini API Key. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i>
 
-![application user interface](https://github.com/IloBe/doc_investigator_project/doc_investigation_app.JPG
-
+## Application User Interface
+![application user interface](doc_investigation_app.JPG)
+<br>
 
 ## Project Structure
 doc_investigator_project/<br>
-├── logs/                      # Includes log files<br>
+├── logs/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;&nbsp;# Includes log files<br>
 ├── src/<br>
 │   └── doc_investigator/<br>
 │       ├── __init__.py<br>
-│       ├── app.py             # Contains the AppUI class (Gradio logic)<br>
-│       ├── config.py          # Contains the Config dataclass<br>
-│       ├── database.py        # Contains the DatabaseManager class<br>
-│       ├── documents.py       # Contains all DocumentLoader strategies<br>
-│       ├── services.py        # Contains the GeminiService class<br>
-│       └── logging_config.py  # Contains the Loguru setup function<br>
+│       ├── app.py&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;&ensp;# Contains the AppUI class (Gradio logic)<br>
+│       ├── config.py&emsp;&emsp;&emsp;&emsp;&ensp;&nbsp;# Contains the Config dataclass<br>
+│       ├── database.py&emsp;&emsp;&emsp;&ensp;# Contains the DatabaseManager class<br>
+│       ├── documents.py&emsp;&emsp;&ensp;# Contains all DocumentLoader strategies<br>
+│       ├── services.py&emsp;&emsp;&emsp;&emsp;# Contains the GeminiService class<br>
+│       └── logging_config.&emsp;&emsp;# Contains the Loguru setup function<br>
 ├── tests/<br>
 │   ├── __init__.py<br>
-│   └── test_database.py       # Pytest tests for the DatabaseManager<br>
-│   └── test_documents.py      # Pytest tests for DocumentProcessor validation<br>
-│   └── test_app.py            # Pytest tests for the AppUI logic (reset workflow)<br>
-├── main.py                    # Main entry point to run the application<br>
-├── requirements.txt           # Project dependencies<br>
-└── README.md                  # Instructions for setup and usage<br>
+│   └── test_database.py&emsp;&ensp;# Pytest tests for the DatabaseManager<br>
+│   └── test_documents.py&ensp;# Pytest tests for DocumentProcessor validation<br>
+│   └── test_app.py&emsp;&emsp;&emsp;&emsp;# Pytest tests for the AppUI logic (reset workflow)<br>
+├── main.py&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Main entry point to run the application<br>
+├── requirements.txt&emsp;&emsp;&ensp;# Project dependencies<br>
+└── README.md&emsp;&emsp;&emsp;&emsp;# Instructions for setup and usage<br>
 
 ## How to Generate and Run the Code
 ### Setup
