@@ -7,7 +7,7 @@ Afterwards, this PoC approach has been transfered to a project level. The projec
 
 As a prerequisite, you need a Google Gemini API Key. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i>
 
-![application user interface](https://github.com/IloBe/doc_investigator_project/assets/doc_investigation_app.JPG
+![application user interface](https://github.com/IloBe/doc_investigator_project/doc_investigation_app.JPG
 
 
 ## Project Structure
