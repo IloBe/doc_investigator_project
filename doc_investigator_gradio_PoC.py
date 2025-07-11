@@ -1,5 +1,5 @@
 """
-A small gradio app for document investigation with error handling, typing and logging.
+A small gradio app for document investigation with error handling, typing and CLI logging.
 This version includes a UI reset after evaluation and an analysis tab.
 """
 
@@ -19,6 +19,11 @@ import openpyxl
 import google.generativeai as genai
 
 
+# --- Custom exceptions ---
+class InvalidFileTypeException(Exception):
+    """Custom exception raised for unsupported file types."""
+    pass
+
 # --- Config ---
 @dataclass(frozen=True)
 class Config:
@@ -30,12 +35,15 @@ class Config:
     # as checked with helper file 'check_google_models.py' of this directory
     LLM_MODEL_NAME: str = "gemini-2.5-pro"
     # Whenever you need to create a new Config object,
-    # call this lambda function, which will return a brand new list." 
+    # call this lambda function, which will return a brand new list. 
     # This correctly isolates the state of each object. Annotation:
     # A simple list is created only once, and will throw the following error:
     # ValueError: mutable default <class 'list'> for field SUPPORTED_FILE_TYPES is not allowed:
     # use default_factory
-    SUPPORTED_FILE_TYPES: List[str] = field(default_factory=lambda: ['.pdf', '.docx', '.txt', '.xlsx'])
+    TEMPERATURE: float = 0.2
+    TOP_P: float = 0.95
+    SUPPORTED_FILE_TYPES: List[str] = field(
+        default_factory=lambda: ['.pdf', '.docx', '.txt', '.xlsx'])
 
 
 # --- DB layer ---
@@ -66,13 +74,21 @@ class DatabaseManager:
                         evaluation TEXT
                     )
                 """)
+                table_info = cursor.execute("PRAGMA table_info(interactions)").fetchall()
+                column_names = [info[1] for info in table_info]
+                # main LLM model properties for prompt output result
+                if 'temperature' not in column_names:
+                    cursor.execute("ALTER TABLE interactions ADD COLUMN temperature REAL")
+                if 'top_p' not in column_names:
+                    cursor.execute("ALTER TABLE interactions ADD COLUMN top_p REAL")
+                
                 conn.commit()
-            print(f"Database '{self.db_path}' is ready.")
+            print(f"Database '{self.db_path}' is ready with required attributes.")
         except sqlite3.Error as e:
             print(f"FATAL: Database setup failed: {e}")
             raise
 
-    def log_interaction(self, prompt: str, answer: str, evaluation: str) -> None:
+    def log_interaction(self, prompt: str, answer: str, evaluation: str, temperature: float, top_p: float) -> None:
         """
         Logs a user interaction to the database.
 
@@ -80,6 +96,8 @@ class DatabaseManager:
             prompt (str): The user's input prompt.
             answer (str): The LLM's generated answer.
             evaluation (str): The user's evaluation of the answer.
+            temperature (float): The temperature value used for the LLM call.
+            top_p (float): The top_p value used for the LLM call.
         
         Raises:
             sqlite3.Error: If there is an issue with the database transaction.
@@ -88,9 +106,10 @@ class DatabaseManager:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "INSERT INTO interactions (timestamp, prompt, answer, evaluation) VALUES (?, ?, ?, ?)",
-                    (datetime.now().isoformat(), prompt, answer, evaluation)
+                    "INSERT INTO interactions (timestamp, prompt, answer, evaluation, temperature, top_p) VALUES (?, ?, ?, ?, ?, ?)",
+                    (datetime.now().isoformat(), prompt, answer, evaluation, temperature, top_p)
                 )
+                print(f"User interaction with prompt '{prompt}' is logged to the database.")
                 conn.commit()
         except sqlite3.Error as e:
             print(f"ERROR: Could not log interaction to database: {e}")
@@ -157,7 +176,14 @@ class ExcelLoaderStrategy(DocumentLoaderStrategy):
 
 class DocumentProcessor:
     """Context class that uses a strategy to process documents."""
-    def __init__(self):
+    def __init__(self, supported_extensions: List[str]):
+        """
+        Initializes the DocumentProcessor.
+
+        Args:
+            supported_extensions (List[str]): A list of supported file extensions (e.g., ['.pdf', '.docx']).
+        """
+        self.supported_extensions = supported_extensions
         self._strategies: Dict[str, DocumentLoaderStrategy] = {
             '.pdf': PDFLoaderStrategy(),
             '.docx': DocxLoaderStrategy(),
@@ -165,24 +191,55 @@ class DocumentProcessor:
             '.xlsx': ExcelLoaderStrategy(),
             '.xls': ExcelLoaderStrategy()
         }
+        print(f"DocumentProcessor initialized for types: {supported_extensions}")
+
+    def validate_files(self, files: List[Any]) -> None:
+            """
+            Validates that all uploaded files have a supported extension.
+    
+            Args:
+                files (List[Any]): A list of file objects from Gradio.
+    
+            Raises:
+                InvalidFileTypeException: If any file in the list has an unsupported extension.
+            """
+            print(f"Validating {len(files)} files...")
+            if not files:
+                return  print("... Nothing to validate")
+    
+            for file in files:
+                file_name = os.path.basename(file.name)
+                _, file_extension = os.path.splitext(file_name)
+                if file_extension.lower() not in self.supported_extensions:
+                    error_msg = f"Unsupported file type: '{file_extension}' in file '{file_name}'."
+                    print(error_msg) # Log the specific error before raising (warning)
+                    raise InvalidFileTypeException(error_msg)
+            
+            print(f"All {len(files)} files passed validation.") # success
 
     def process_files(self, files: List[Any]) -> str:
         """
-        Extracts text from a list of Gradio file objects.
+        Extracts text from a list of pre-validated Gradio file objects.
+        Validation is passed for this list.
 
         Args:
-            files (List[Any]): A list of file objects from Gradio.
+            files (List[Any]): A list of validated file objects from Gradio.
 
         Returns:
             str: The combined text content of all files.
         """
+        print(f"Processing {len(files)} validated files to extract text...")
         all_texts = []
         for file in files:
             file_path = file.name
             _, file_extension = os.path.splitext(file_path)
-            strategy = self._strategies.get(file_extension.lower(), TextLoaderStrategy())
+            
+            # lookup is safe, assume validation has passed
+            strategy = self._strategies[file_extension.lower()]
             text = strategy.load(file_path)
             all_texts.append(f"--- CONTENT FROM {os.path.basename(file_path)} ---\n{text}")
+            
+        print("Text extraction from all files complete.")  # success
         return "\n\n".join(all_texts)
 
 
@@ -193,6 +250,10 @@ class GeminiService:
         self.config = config
         try:
             genai.configure(api_key=api_key)
+            self.generation_config = genai.types.GenerationConfig(
+                temperature=self.config.TEMPERATURE,
+                top_p=self.config.TOP_P
+            )
             self.model = genai.GenerativeModel(config.LLM_MODEL_NAME)
         except Exception as e:
             print(f"FATAL: Failed to configure Gemini API: {e}")
@@ -240,7 +301,8 @@ class GeminiService:
 # --- Gradio App ---
 class AppUI:
     """Encapsulates the Gradio UI and its event handling logic."""
-    def __init__(self, config: Config, db_manager: DatabaseManager, doc_processor: DocumentProcessor, ai_service: GeminiService):
+    def __init__(self, config: Config, db_manager: DatabaseManager,
+                 doc_processor: DocumentProcessor, ai_service: GeminiService):
         self.config = config
         self.db_manager = db_manager
         self.doc_processor = doc_processor
@@ -268,7 +330,7 @@ class AppUI:
             state_last_prompt = gr.State(None)
             state_last_answer = gr.State(None)
             
-            # UI components
+            # UI components and layout
             # header and instructions
             # added tabs for investigation and analysis
             gr.Markdown(
@@ -299,10 +361,11 @@ class AppUI:
 
                     with gr.Row():
                         with gr.Column(scale=1):
+                            # loose Gradio validation to allow custom handler to take care
                             file_uploader = gr.File(
-                                label="Step 1: Upload Your Documents",
-                                file_count="multiple",
-                                file_types=self.config.SUPPORTED_FILE_TYPES,
+                                label = "Step 1: Upload Your Documents",
+                                file_count = "multiple",
+                                file_types = None # allow any file type, custom handler manages validation
                             )
                             prompt_input = gr.Textbox(label="Step 2: Enter Your Prompt", lines=3)
                             submit_btn = gr.Button("Investigate", variant="primary")
@@ -340,44 +403,81 @@ class AppUI:
                         )
 
             # Event Handling
+            # first for validation method
+            file_uploader.upload(
+                fn=self._handle_file_upload,
+                inputs=[file_uploader],
+                outputs=[file_uploader]
+            )
+            # second for button clicks
             submit_btn.click(
                 fn=self._handle_investigation,
-                inputs=[file_uploader, prompt_input, state_full_text],
-                outputs=[answer_output, state_full_text, state_last_prompt,
-                         state_last_answer, evaluation_panel]
-            ).then(lambda: "", outputs=[prompt_input])
+                inputs=[file_uploader,
+                        prompt_input],
+                outputs=[answer_output,
+                         state_full_text,
+                         state_last_prompt,
+                         state_last_answer,
+                         evaluation_panel]
+            )
 
             evaluation_button.click(
                 fn=self._handle_evaluation,
-                inputs=[state_last_prompt, state_last_answer, evaluation_radio],
+                inputs=[state_last_prompt,
+                        state_last_answer,
+                        evaluation_radio],
                 # lists all components and states that need to be reset
-                outputs=[
-                    file_uploader,
-                    prompt_input,
-                    answer_output,
-                    evaluation_panel,
-                    state_full_text,
-                    state_last_prompt,
-                    state_last_answer
-                ]
+                outputs=[file_uploader,
+                         prompt_input,
+                         answer_output,
+                         evaluation_panel,
+                         evaluation_radio,
+                         state_full_text,
+                         state_last_prompt,
+                         state_last_answer]
             )
+
         return app
 
-    def _handle_investigation(self, files: List[Any], prompt: str, current_context: Optional[str]) -> tuple:
-        """Orchestrates document processing and answer generation."""
-        if current_context is None:
-            if not files: raise gr.Error("Please upload at least one document.")
-            full_text = self.doc_processor.process_files(files)
+    def _handle_file_upload(self, files: List[Any]) -> Optional[List[Any]]:
+        """
+        Validates files immediately upon upload by calling the dedicated validation method.
+        """
+        if not files:
+            return None # No files to validate, clear the component.
+
+        try:
+            self.doc_processor.validate_files(files)
+            return files # Success: return the file list to keep it in the UI
+        except InvalidFileTypeException as e:
+            supported_types = ", ".join(self.config.SUPPORTED_FILE_TYPES)
+            gr.Warning(f"{e} Supported types are: {supported_types}")
+            return None # Failure: return None to clear the component and unlock UI
+
+    def _handle_investigation(self, files: List[Any], prompt: str) -> tuple:
+        """
+        Orchestrates document processing and answer generation.
+        The return tuple signature is expanded to allow resetting the file uploader on error.
+        """
+        try:
+            if not files:
+                raise gr.Error("Please upload at least one document to investigate.")
+
+            full_text = self.doc_processor.process_files(files)   
+            current_context = full_text
             if len(full_text) > self.config.MAX_CONTEXT_CHARACTERS:
-                warning = f"\n\n[Warning: Content truncated...]"
-                current_context = full_text[:self.config.MAX_CONTEXT_CHARACTERS] + warning
-            else:
-                current_context = full_text
-        
-        answer = self.ai_service.get_answer(current_context, prompt)
-        show_eval = answer != self.config.UNKNOWN_ANSWER and "error" not in answer.lower()
-        
-        return answer, current_context, prompt, answer, gr.update(visible=show_eval)
+                current_context = full_text[:self.config.MAX_CONTEXT_CHARACTERS]
+            
+            answer = self.ai_service.get_answer(current_context, prompt)
+            show_eval = answer != self.config.UNKNOWN_ANSWER and "error" not in answer.lower()
+            print("Successful investigation step.") # success
+            return answer, current_context, prompt, answer, gr.update(visible=show_eval)
+
+        except Exception as e:
+            print("An unexpected error occurred during the investigation step.", exc_info=e) # exception
+            gr.Error("An unexpected error occurred. Please check the console and try again.")
+            return gr.update(), None, None, None, gr.update(visible=False)
+
 
     def _handle_evaluation(self, prompt: str, answer: str, choice: str) -> Tuple:
             """
@@ -394,25 +494,39 @@ class AppUI:
                         gr.update(visible=True), gr.update(), gr.update(), gr.update())
             
             try:
-                self.db_manager.log_interaction(prompt, answer, choice)
-                gr.Info("Evaluation saved! The interface has been reset.")
+                self.db_manager.log_interaction(
+                    prompt, answer, choice,
+                    self.config.TEMPERATURE,
+                    self.config.TOP_P
+                )
+                print((f"Evaluation ('{choice[:5]}...') submitted and logged successfully."))
+                gr.Info("Evaluation saved! The interface has been reset for next run.")
                 
                 # full UI reset, order must match the 'outputs' list
                 return (
-                    gr.update(value=None),      # Reset file_uploader
-                    gr.update(value=""),        # Reset prompt_input
-                    gr.update(value="Your answer will appear here..."), # Reset answer_output
-                    gr.update(visible=False),   # Hide evaluation_panel
-                    None,                       # Reset state_full_text
-                    None,                       # Reset state_last_prompt
-                    None                        # Reset state_last_answer
+                    # Reset of ...
+                    gr.update(value=None),      # file_uploader
+                    gr.update(value=""),        # prompt_input
+                    gr.update(value="Your answer will appear here..."), # answer_output
+                    gr.update(visible=False),   # evaluation_panel
+                    gr.update(value=None),      # evaluation_radio
+                    None,                       # state_full_text
+                    None,                       # state_last_prompt
+                    None                        # state_last_answer
                 )
             except sqlite3.Error:
                 print(f"gradio handle evaluation: Failed to save evaluation due to a database error")
                 gr.Error("Failed to save evaluation due to a database error.")
                 # Keep the panel open and state intact so the user can try again.
                 return (gr.update(), gr.update(), gr.update(),
-                        gr.update(visible=True), gr.update(), gr.update(), gr.update())
+                        gr.update(visible=True), gr.update(), gr.update(), gr.update(), gr.update())
+
+            except Exception as e:
+                print("Failed to handle evaluation submission.", exc_info=e)
+                gr.Error("Failed to save evaluation due to a system error. Please try again.")
+                # Keep the panel open and state intact so the user can try again.
+                return (gr.update(), gr.update(), gr.update(),
+                        gr.update(visible=True), gr.update(), gr.update(), gr.update(), gr.update())
 
     def launch(self):
         """Launches the Gradio application."""
@@ -433,7 +547,7 @@ def main():
 
     try:
         db_manager = DatabaseManager(config.DB_FILE)
-        doc_processor = DocumentProcessor()
+        doc_processor = DocumentProcessor(config.SUPPORTED_FILE_TYPES)
         ai_service = GeminiService(api_key, config)
     except Exception as e:
         print(f"Application failed to initialize. Aborting. Error: {e}")
