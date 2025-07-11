@@ -1,10 +1,10 @@
 # Document Investigation AI
 
-This Gradio application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can ask questions about their content using the Google Gemini API. The application features a robust architecture, comprehensive logging that can be monitored by Datasette, and a test suite for the database handling as a test example.
+This Gradio application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can ask questions about their content using the Google Gemini API. The application features a robust architecture, comprehensive logging that can be monitored by Datasette, and a test suite for the database handling and some UI workflows as a test example.
 
 As a prerequisite, you need a Google Gemini API Key. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i>
 
-Have in mind that this is not a full production grade software code.
+Have in mind that this is not a full production grade software code. It is tested on Ubuntu with Python V3.10.9.
 
 ## Project Structure
 doc_investigator_project/<br>
@@ -28,9 +28,9 @@ doc_investigator_project/<br>
 ## How to Generate and Run the Code
 ### Setup
 
-1.  **Clone the repository**
+1.  **Clone the remote repository to your local directory**
     ```bash
-    git clone <your-repo-url>
+    git clone https://github.com/IloBe/doc_investigator_project.git
     cd doc_investigator_project
     ```
 
