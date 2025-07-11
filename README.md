@@ -1,10 +1,14 @@
 # Document Investigation AI
 
-This Gradio application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can ask questions about their content using the Google Gemini API. The application features a robust architecture, comprehensive logging that can be monitored by Datasette, and a test suite for the database handling and some UI workflows as a test example.
+This Gradio application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can ask questions about their content using the Google Gemini API. Until the output prompt is created, the specific UI output text message located at the right side of the document upload window changes its black colour to a light grey colour. There the LLM output result and the associated evaluation window appears 
+
+As a starting point a single script PoC file has generated and a .pdf document about a movie dataset has been added to get a first manual impression of application usage.
+Afterwards, this PoC approach has been transfered to a project level. The project application features a robust architecture, comprehensive exception handling and logging. Additionally, a prompt evaluation has been implemented, that can be monitored by a <i>Datasette</i> call to get the stored evaluation information of an <i>SQLite</i> database. Furthermore, a unit test suite for database handling and some UI workflows as test examples are added.
 
 As a prerequisite, you need a Google Gemini API Key. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i>
 
-Have in mind that this is not a full production grade software code. It is tested on Ubuntu with Python V3.10.9.
+![application user interface](https://github.com/IloBe/doc_investigator_project/assets/doc_investigation_app.JPG
+
 
 ## Project Structure
 doc_investigator_project/<br>
@@ -21,6 +25,8 @@ doc_investigator_project/<br>
 ├── tests/<br>
 │   ├── __init__.py<br>
 │   └── test_database.py       # Pytest tests for the DatabaseManager<br>
+│   └── test_documents.py      # Pytest tests for DocumentProcessor validation<br>
+│   └── test_app.py            # Pytest tests for the AppUI logic (reset workflow)<br>
 ├── main.py                    # Main entry point to run the application<br>
 ├── requirements.txt           # Project dependencies<br>
 └── README.md                  # Instructions for setup and usage<br>
