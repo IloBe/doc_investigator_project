@@ -1,13 +1,14 @@
 # Document Investigation AI
 
-This <i>Gradio</i> application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can ask questions about their content using the Google Gemini API via user input prompts. Until the output prompt is created, the specific UI output text message "Your answer will appear here..." located at the right side of the document upload window changes its black colour to light grey. There the LLM output result and the associated evaluation window appears after it is created.<br>
-If a document with a wrong type shall be uploaded (e.g. png image), an error message appeared to inform the user which kind of document types are allowed.
+This interactive <i>Gradio</i> application allows users to upload documents of type pdf, word doc, txt and excel. Then the user can querying them using the Google Gemini API via user input prompts. Until the LLM output prompt is created, the specific UI text message "Your answer will appear here..." changes its black colour to light grey. This can take a few seconds. At that position, the final result and the associated evaluation window with its 'yes' or 'no' radio buttons pops up.<br>
+If a document with a wrong type shall be uploaded (e.g. png image), an error message appeared to inform the user which kind of document types are possible.
 
 As a starting point for this use case, a single script PoC file has been generated. An example .pdf document about a movie dataset has been added to get a first manual impression of application and evaluation usage.
 
-Afterwards, this PoC approach has been transfered to a project level. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. Additionally, a prompt evaluation has been implemented, that can be monitored by a <i>Datasette</i> call to get the stored evaluation information of an <i>SQLite</i> database. Furthermore, a unit test suite for database handling and some UI workflows as test examples are added.
+Afterwards, this PoC approach has been transfered to a project level. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. The evaluation feature can be monitored by a <i>Datasette</i> call to get the entire stored evaluation information of an <i>SQLite</i> database.<br>
+Furthermore, a unit test suite for database handling and some UI workflows as test examples are added.
 
-As a prerequisite, you need a Google Gemini API Key. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i>
+As a prerequisite, you need a Google Gemini API Key. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i> and source it or use the export CLI command mentioned below.
 
 ## Application User Interface
 ![application user interface](doc_investigation_app.JPG)
