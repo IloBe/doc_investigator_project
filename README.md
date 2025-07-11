@@ -48,12 +48,18 @@ doc_investigator_project/<br>
     ```
 
 ### Run the Application
-Execute the main entry point script:
+Execute the main entry point script for the entire application:
 ```bash
 python main.py
 ```
+Execute the PoC script file, which has been the starting point of the project.
+```bash
+python3 doc_investigator_gradio_PoC.py
+```
 
-The application will be available at http://127.0.0.1:7860. Log files for each session will be created in the logs/ directory.
+The application or the PoC script file will be available at http://127.0.0.1:7860.
+Regarding the entire application, Log files for each session will be created in the logs/ directory.
+For the PoC script file simple CLI prints are added only.
 
 ### Run the Tests
 To ensure the components are working correctly, run the test suite using pytest:
