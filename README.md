@@ -61,7 +61,7 @@ Execute the main entry point script for the entire application:
 ```bash
 python main.py
 ```
-Execute the PoC script file, which has been the starting point of the project.
+Execute the PoC script file, which has been the starting point of the project:
 ```bash
 python3 doc_investigator_gradio_PoC.py
 ```
@@ -77,7 +77,8 @@ pytest
 ```
 
 ### Observe the Logged Data
-After using the app, you can explore the doc_investigator_prod.db database with Datasette:
+After using the entire project applicatoin, you can explore the doc_investigator_prod.db database with Datasette:
 ```bash
 datasette doc_investigator_prod.db --open
 ```
+
