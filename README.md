@@ -83,3 +83,8 @@ After using the entire project applicatoin, you can explore the doc_investigator
 datasette doc_investigator_prod.db --open
 ```
 
+In the application, general invormation is given with its second tab. This CLI command will launch a web server and open a new browser tab. You will see a fully interactive dashboard for your database. You can:
+-    Click on the interactions table to view all your logged data
+-    Sort and filter columns with a few clicks
+-    Run custom SQL queries to perform more complex analysis (e.g. SELECT * FROM interactions WHERE evaluation LIKE '%Yes%')
+-    Export data to CSV or JSON
