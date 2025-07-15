@@ -1,8 +1,0 @@
-gradio
-google-generativeai
-loguru
-PyMuPDF
-python-docx
-openpyxl
-datasette
-pytest

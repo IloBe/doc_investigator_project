@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doc_investigator"
+version = "0.1.0"
+
+# origin was: where = ["src"]
+[tool.setuptools.packages.find]
+pythonpath = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+# Ensures pytest-asyncio runs in the recommended mode.
+asyncio_mode = "strict"
+
+# Registers custom markers to avoid warnings from --strict-markers.
+markers = [
+    "asyncio: marks tests as asynchronous (for pytest-asyncio)",
+]
+
+# These options will be automatically applied every time you run 'pytest'.
+addopts = [
+    "-ra",                     # Show extra test summary info for all but passed tests.
+    "--verbose",               # Increase verbosity for more detailed test output.
+    "--strict-markers",        # Fail the test suite if an unregistered marker is used.
+    "--color=yes",             # Ensure terminal output is colorized for readability.
+    "--cov=src/doc_investigator_strategy_pattern",  # Correct path for coverage.
+    "--cov-report=term-missing",   # Show a coverage report in the terminal.
+    

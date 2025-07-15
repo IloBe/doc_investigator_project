@@ -1,0 +1,27 @@
+# =============================================================================
+# Core Application Dependencies
+#
+# These are the essential packages required to run the Document Investigator app.
+# Install these for a production deployment.
+#
+# To install:
+# pip install -r requirements.txt
+# =============================================================================
+
+# --- AI Service ---
+google-generativeai==0.8.5   # The official Google Gemini API client library
+
+# --- UI and Web Server ---
+gradio==5.37.0               # The web UI framework
+uvicorn==0.35.0              # ASGI server to run the Gradio application
+
+# --- Document Processing ---
+openpyxl==3.1.2              # For reading and processing .xlsx Excel files
+PyMuPDF==1.26.3              # For extracting text from .pdf files via fitz
+python-docx==1.2.0           # For reading and processing .docx Word files
+
+# --- Utilities ---
+loguru==0.7.3                # A modern, powerful logging library
+
+# --- Local Data Analysis ---
+datasette==0.65.1            # Tool to instantly explore and analyze the SQLite database
