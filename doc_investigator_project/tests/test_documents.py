@@ -1,0 +1,92 @@
+# tests/test_documents.py
+
+"""
+Unit tests for the DocumentProcessor and its strategies.
+"""
+
+import pytest
+import sys
+import os
+
+from doc_investigator_strategy_pattern.documents import DocumentProcessor, InvalidFileTypeException
+
+
+# A fixture to provide a configured DocumentProcessor instance
+@pytest.fixture
+def doc_processor():
+    """Provides a DocumentProcessor instance for testing."""
+    # These are the extensions our app is configured to support
+    supported_extensions = ['.pdf', '.docx', '.txt', '.xlsx']
+    return DocumentProcessor(supported_extensions=supported_extensions)
+
+# A fixture to create mock Gradio file objects
+@pytest.fixture
+def mock_gradio_file(tmp_path):
+    """Creates a factory for mock Gradio file objects."""
+    class MockFile:
+        def __init__(self, name):
+            self.name = name
+
+    def _create_file(filename, content = ""):
+        file_path = tmp_path / filename
+        file_path.write_text(content)
+        return MockFile(name = str(file_path))
+
+    return _create_file
+
+def test_validate_files_success(doc_processor, mock_gradio_file):
+    """Tests that validate_files passes with a list of supported file types."""
+    valid_files = [
+        mock_gradio_file("report.docx"),
+        mock_gradio_file("data.txt")
+    ]
+    # should run without raising an exception
+    doc_processor.validate_files(valid_files)
+
+def test_validate_files_failure(doc_processor, mock_gradio_file):
+    """Tests that validate_files raises InvalidFileTypeException for unsupported types."""
+    invalid_files = [
+        mock_gradio_file("report.docx"),
+        mock_gradio_file("image.png") # not supported doc type
+    ]
+    with pytest.raises(InvalidFileTypeException, match = "Unsupported file type: '.png'"):
+        doc_processor.validate_files(invalid_files)
+
+def test_process_single_txt_file(doc_processor, mock_gradio_file):
+    """Tests text extraction from a single .txt file."""
+    file_content = "This is a test text file."
+    files = [mock_gradio_file("test.txt", content = file_content)]
+    
+    result = doc_processor.process_files(files)
+    
+    assert file_content in result
+    assert "--- CONTENT FROM test.txt ---" in result
+    
+def test_process_multiple_files(doc_processor, mock_gradio_file):
+    """Tests text extraction from multiple files, ensuring content is combined."""
+    content1 = "Content from file one."
+    content2 = "Content from file two."
+    files = [
+        mock_gradio_file("one.txt", content=content1),
+        mock_gradio_file("two.txt", content=content2)
+    ]
+
+    result = doc_processor.process_files(files)
+
+    assert content1 in result
+    assert content2 in result
+    assert "--- CONTENT FROM one.txt ---" in result
+    assert "--- CONTENT FROM two.txt ---" in result
+    assert result.count("\n\n") >= 1       
+
+def test_loader_strategy_for_nonexistent_file(doc_processor, tmp_path):
+    """Tests that loaders handle non-existent files gracefully."""
+    # Note: testing this through main processor
+    class MockNonExistentFile:
+        name = str(tmp_path / "nonexistent.txt")
+    
+    files = [MockNonExistentFile()]
+    
+    # expect an error message inside the content, not an exception
+    result = doc_processor.process_files(files)
+    assert "[Error processing TXT: nonexistent.txt]" in result

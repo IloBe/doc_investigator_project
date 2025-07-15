@@ -1,9 +1,0 @@
-gradio==5.35.0           # mandatory, until gradio 5.36.2 local bug is unfixed; symptom: empty screen
-google-generativeai
-loguru
-PyMuPDF
-python-docx
-openpyxl
-datasette
-pytest
-python-dotenv
