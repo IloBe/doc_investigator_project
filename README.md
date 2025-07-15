@@ -33,6 +33,7 @@ doc_investigator_project/<br>
 │   └── test_database.py&emsp;&ensp;# Pytest tests for the DatabaseManager<br>
 │   └── test_documents.py&ensp;# Pytest tests for DocumentProcessor validation<br>
 │   └── test_app.py&emsp;&emsp;&emsp;&emsp;# Pytest tests for the AppUI logic (reset workflow)<br>
+│   └── test_llm_behaviour.py&ensp;# Pytest tests for LLM behaviour validation<br>
 ├── pyproject.toml&emsp;&emsp;&emsp;&nbsp;# Config file tells pytest where to find source code<br>
 ├── requirements.txt&emsp;&emsp;&ensp;# Project dependencies<br>
 ├── requirements-dev.txt&ensp;# Additional development dependencies<br>
