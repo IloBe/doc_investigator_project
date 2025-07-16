@@ -1,5 +1,7 @@
 # Document Investigation AI
 
+In this readme file some additional **technical information** about the interactive <i>Gradio</i> application is given.
+
 ## Project Requirements
 Some engineering quality aspects have been taken into account, even the coding does not fulfil production grade level according ISO norms or best practices. Nevertheless, implemented aspects are:
 
@@ -11,7 +13,6 @@ Regarding the implementation process:<br>
 Starting point has been the implementation of a PoC Python 3.10.9 script. The transition from **PoC to MVP** is summarized: The entire user journey, from document upload and validation to AI investigation, automatic logging, user evaluation, and a full UI reset, is implemented with some specific requirements.
 
 ## Gradio and Uvicorn
-In this readme file some additional **technical information** about the interactive <i>Gradio</i> application is given.
 Working with Gradio, it is not possible to use a direct Uvicorn server run with the associated parameters in main(). Means something like:
 ```
     uvicorn.run(
@@ -118,10 +119,10 @@ actual_answer = real_ai_service.get_answer(context, user_prompt)
 assert actual_answer == expected_answer
 ```
 
-### Concepts & Research
-Some industry-standard resources are:
+## Concepts & Research
+Some industry-standard resources about generative AI are:
 
-#### Official Google Gemini Evaluations:
+### Official Google Gemini Evaluations
 
 - **Gemini 2.5 Pro Technical Report**: The primary source for performance metrics, safety evaluations, and model capabilities. This is essential reading.
 
@@ -131,7 +132,7 @@ Some industry-standard resources are:
 
             Link: https://ai.google.dev/
 
-#### AI Security Frameworks**:
+### AI Security Frameworks
 
 - **OWASP Top 10 for Large Language Model Applications**: This is the most important security resource. It lists the ten most critical security risks for LLM applications, including Prompt Injection, Insecure Output Handling, and Model Denial of Service. Our security improvements were based on these principles.
 
@@ -141,7 +142,7 @@ Some industry-standard resources are:
 
             Link: https://atlas.mitre.org/
 
-#### Third-Party Benchmarks and Leaderboards**:
+### Third-Party Benchmarks and Leaderboards
 
 - **Hugging Face Open LLM Leaderboard**: A well-respected leaderboard that evaluates and ranks open-source LLMs on key benchmarks. While it doesn't include closed models like Gemini, it's a great reference for the state of the art.
 
