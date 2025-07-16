@@ -30,6 +30,7 @@ doc_investigator_project/<br>
 |   └── main.py&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Main entry point to run the application<br>
 ├── tests/<br>
 │   ├── __init__.py<br>
+│   ├── conftest.py&emsp;&emsp;&emsp;&emsp;# Stops external FilterWarnings thrown in pytest run terminal<br>
 │   └── test_database.py&emsp;&ensp;# Pytest tests for the DatabaseManager<br>
 │   └── test_documents.py&ensp;# Pytest tests for DocumentProcessor validation<br>
 │   └── test_app.py&emsp;&emsp;&emsp;&emsp;# Pytest tests for the AppUI logic (reset workflow)<br>
