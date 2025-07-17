@@ -27,11 +27,12 @@ class Config:
     LLM_MODEL_NAME: str = "gemini-2.5-pro"
     TEMPERATURE: float = 0.2    # low value - more deterministic, focused 
     TOP_P: float = 0.95         # nucleus sampling parameter
-    MAX_CONTEXT_CHARACTERS: int = 800000 # Corresponds to ~1M tokens for Gemini 1.5 Pro
+    MAX_CONTEXT_CHARACTERS: int = 800000 # Corresponds to ~1M tokens for Gemini
 
     # --- Application Logic Settings ---
     UNKNOWN_ANSWER: str = "Your request is unknown, associated information is not available. Please try again!"
     NOT_ALLOWED_ANSWER: str = "Sorry, your task is not allowed. Please try again!"
+    NO_REASON_GIVEN: str = "no reason given"
 
     # Whenever you need to create a new Config object,
     # call this lambda function, which will return a brand new list. 

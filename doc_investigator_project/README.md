@@ -48,7 +48,7 @@ Therefore, Gradio's approach of app.launch() method is used instead.
 Regarding classical software testing, the following 3 files with <i>Pytest</i> unit test cases are delivered, to make sure refactoring or the implementation of new features will not brack the application workflow.<br>
 
 **Important for pytest run:**
-Beside the unit tests, outside the tests directory a Gradio server process is started. As a symptom, the pytest run will stopp after having collected all test items. We have to trigger the remaining pytest run manually by stopping such server, e.g. via ctrl+c on the pytest terminal. Afterwards everything works as expected, means the pytest run finish with its result information.
+Beside the unit tests, outside the tests directory, if a Gradio server process is started and still running: As a symptom, the pytest run will stopp after having collected all test items. Then, we have to trigger the remaining pytest run manually by stopping such server, e.g. via ctrl+c on the pytest terminal. Afterwards everything works as expected, means the pytest run finish with its result information.
 
 Note:<br>
 The test configuration settings are delivered with the <i>pyproject.toml</i> file. Nevertheless, regarding filter warnings there is an issue by using <i>Gradio</i> and <i>Uvicorn</i> which is handled by an additional **conftest.py** file, stored in the tests directory.

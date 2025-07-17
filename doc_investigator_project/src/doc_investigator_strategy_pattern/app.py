@@ -142,6 +142,13 @@ class AppUI:
                          "❌ No, the answer is not helpful or inaccurate."],
                         label = "Step 3: Was this answer useful?"
                     )
+                    eval_reason_textbox = gr.Textbox(
+                        label="Optional: Explain your evaluation",
+                        placeholder="Regarding your passing decision about the LLM answer: Please add your reason with max. 10 sentences. This is optional.",
+                        lines=5,  # Allows for multi-line input with a scrollbar
+                        interactive=True,
+                        visible=True
+                    )
                     evaluation_button = gr.Button("Submit Evaluation and Reset")
 
         # --- Event Handling ---
@@ -167,12 +174,14 @@ class AppUI:
             inputs = [state_doc_names,
                       state_last_prompt,
                       state_last_answer,
-                      evaluation_radio],
+                      evaluation_radio,
+                      eval_reason_textbox],
             outputs = [file_uploader,
                        prompt_input,
                        answer_output,
                        evaluation_panel,
                        evaluation_radio,
+                       eval_reason_textbox, 
                        state_doc_names,
                        state_last_prompt,
                        state_last_answer]
@@ -275,7 +284,9 @@ class AppUI:
                         document_names = doc_names,
                         prompt = prompt,
                         answer = answer,
-                        evaluation = "no",
+                        output_passed = "no",
+                        eval_reason="no reason given", # Default reason
+                        model_name=self.config.LLM_MODEL_NAME,
                         temperature = self.config.TEMPERATURE,
                         top_p = self.config.TOP_P
                     )
@@ -295,31 +306,35 @@ class AppUI:
         self, doc_names: str,
         prompt: str,
         answer: str,
-        choice: Optional[str]
+        choice: Optional[str],
+        eval_reason: str
     ) -> Tuple[Any, ...]:
         """
         Handles user's evaluation submission, logs it, and resets the UI.
         """
         if not choice:
-            gr.Warning("Please select an evaluation option ('Yes' or 'No') before submitting.")
+            gr.Warning("Please select an evaluation passed option ('Yes' or 'No') before submitting.")
             # return no-op updates to keep UI state as-is
             return (gr.update(), gr.update(), gr.update(),
                     gr.update(visible = True),
-                    gr.update(), gr.update(), gr.update(), gr.update())
+                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update())
 
         evaluation_text = "yes" if "✔️ Yes" in choice else "no"
-        logger.info(f"User submitted evaluation: '{evaluation_text}'. Logging to database.")
+        reason_text = eval_reason.strip() if eval_reason and eval_reason.strip() else self.config.NO_REASON_GIVEN
+        logger.info(f"User submitted evaluation: '{evaluation_text}' with reason: '{reason_text[:50]}'. Logging to database.")
 
         try:
             self.db_manager.log_interaction(
                 document_names = doc_names,
                 prompt = prompt,
                 answer = answer,
-                evaluation = evaluation_text,
+                output_passed=evaluation_text,
+                eval_reason=reason_text,
+                model_name=self.config.LLM_MODEL_NAME,
                 temperature = self.config.TEMPERATURE,
                 top_p = self.config.TOP_P
             )
-            gr.Info("Evaluation saved! The interface has been reset for the next investigation.")
+            gr.Info("Evaluation saved! The interface has been reset for next investigation.")
             
             # returns tuple to reset all relevant UI items and states to initial values
             return (
@@ -328,6 +343,7 @@ class AppUI:
                 "<p style='color:grey;'>The answer will be shown here...</p>", # answer_output
                 gr.update(visible = False), # evaluation_panel
                 None,  # evaluation_radio
+                "",    # eval reason
                 None,  # state_doc_names
                 None,  # state_last_prompt
                 None,  # state_last_answer
@@ -338,4 +354,4 @@ class AppUI:
             # keep panel open and state intact for user to retry
             return (gr.update(), gr.update(), gr.update(),
                     gr.update(visible = True),
-                    gr.update(), gr.update(), gr.update(), gr.update())
+                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update())
