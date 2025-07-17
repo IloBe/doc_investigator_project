@@ -85,7 +85,7 @@ As retention policy a maximum of 5 log files is set (configured in config.py).
 For the PoC script file simple CLI prints are added only.
 
 ### Run the Tests
-Starting from the root path, where the .venv is located, to ensure the components are working correctly, run the <i>Pytest</i> test suite using pytest CLI command. Sometimes it may appear that the test run stops after having collected all test items and the following CLI message <i>'collected 15 items'</i> does not appear. Then trigger the remaining run with **Ctrl+C** click.
+Starting from the root path, where the .venv is located, to ensure the components are working correctly, run the <i>Pytest</i> test suite using pytest CLI command. Sometimes it may appear that the test run stops after having collected all test items and the CLI message about <i>'collected items'</i> does not appear. Then trigger the remaining run with **Ctrl+C** click.
 ```bash
 pytest
 ```
