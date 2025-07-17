@@ -66,14 +66,34 @@ class DatabaseManager:
                 logger.debug("Checking for schema updates...")
                 table_info = cursor.execute("PRAGMA table_info(interactions)").fetchall()
                 column_names: List[str] = [info[1] for info in table_info]
+                
+                # rename 'evaluation' to 'output_passed' for clarity (if needed)
+                if 'evaluation' in column_names and 'output_passed' not in column_names:
+                    logger.info("Schema migration: Renaming 'evaluation' column to 'output_passed'.")
+                    cursor.execute("ALTER TABLE interactions RENAME COLUMN evaluation TO output_passed")
+                    # refresh column names after rename
+                    column_names = [col if col != 'evaluation' else 'output_passed' for col in column_names]
 
-                if 'temperature' not in column_names:
-                    logger.info("Schema migration: Adding 'temperature' column to 'interactions' table.")
-                    cursor.execute("ALTER TABLE interactions ADD COLUMN temperature REAL")
+                # add new columns if they don't exist
+                new_columns = {
+                    "temperature": "REAL",
+                    "top_p": "REAL",
+                    "model_name": "TEXT",
+                    "eval_reason": "TEXT"
+                }
+                
+                for col_name, col_type in new_columns.items():
+                    if col_name not in column_names:
+                        logger.info(f"Schema migration: Adding '{col_name}' column to 'interactions' table.")
+                        cursor.execute(f"ALTER TABLE interactions ADD COLUMN {col_name} {col_type}")
 
-                if 'top_p' not in column_names:
-                    logger.info("Schema migration: Adding 'top_p' column to 'interactions' table.")
-                    cursor.execute("ALTER TABLE interactions ADD COLUMN top_p REAL")
+                #if 'temperature' not in column_names:
+                #    logger.info("Schema migration: Adding 'temperature' column to 'interactions' table.")
+                #    cursor.execute("ALTER TABLE interactions ADD COLUMN temperature REAL")
+
+                #if 'top_p' not in column_names:
+                #    logger.info("Schema migration: Adding 'top_p' column to 'interactions' table.")
+                #    cursor.execute("ALTER TABLE interactions ADD COLUMN top_p REAL")
 
                 conn.commit()
                 logger.success(f"Database '{self.db_path}' is ready with required schema.")
@@ -86,7 +106,9 @@ class DatabaseManager:
     def log_interaction(self, document_names: str,
                         prompt: str,
                         answer: str,
-                        evaluation: str,
+                        output_passed: str,
+                        eval_reason: str,
+                        model_name: str,
                         temperature: float,
                         top_p: float) -> None:
         """
@@ -96,7 +118,9 @@ class DatabaseManager:
             document_names (str): string containing names of uploaded docs
             prompt (str): user's input prompt
             answer (str): LLM's generated answer result
-            evaluation (str): user's evaluation of the answer ('Yes', 'No', etc.)
+            output_passed (str): user's evaluation passed decision of the answer ('yes' or 'no')
+            eval_reason (str): user's written reason for their evaluation passed decision
+            model_name (str): LLM name used for interaction
             temperature (float): LLM temperature value
             top_p (float): LLM top_p value
 
@@ -109,13 +133,21 @@ class DatabaseManager:
                 cursor = conn.cursor()
                 cursor.execute(
                     """
-                    INSERT INTO interactions (timestamp, document_names, prompt, answer, evaluation, temperature, top_p)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO interactions (timestamp, document_names, prompt, answer, output_passed, eval_reason, model_name, temperature, top_p)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (datetime.now().isoformat(), document_names, prompt, answer, evaluation, temperature, top_p)
+                    (datetime.now().isoformat(),
+                     document_names,
+                     prompt,
+                     answer,
+                     output_passed,
+                     eval_reason,
+                     model_name,
+                     temperature,
+                     top_p)
                 )
                 conn.commit()
-                logger.info(f"Successfully logged interaction for evaluation: '{evaluation}'.")
+                logger.info(f"Successfully logged interaction for evaluation: '{output_passed}'.")
         except sqlite3.Error as e:
             logger.error(f"Failed to log interaction to the database. Error: {e}", exc_info=True)
             raise # Re-raise to be handled by the caller (e.g., the UI to show an error message)

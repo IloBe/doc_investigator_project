@@ -7,7 +7,6 @@ Unit tests for the DatabaseManager class.
 import sqlite3
 import pytest
 import sys
-import os
 
 from doc_investigator_strategy_pattern.database import DatabaseManager
 
@@ -37,10 +36,13 @@ def test_initialization_creates_table_and_columns(db_manager):
                             'document_names',
                             'prompt',
                             'answer',
-                            'evaluation',
+                            'output_passed',
+                            'eval_reason',
+                            'model_name',
                             'temperature',
                             'top_p']
         assert all(col in columns for col in expected_columns), "Not all expected columns were created."
+        assert 'evaluation' not in columns, "Old 'evaluation' column should have been renamed."
 
 def test_log_interaction_inserts_correct_data(db_manager):
     """
@@ -48,10 +50,12 @@ def test_log_interaction_inserts_correct_data(db_manager):
     """
     # Define mock data to be inserted
     test_data = {
-        "document_names": "test.pdf, report.docx",
+         "document_names": "test.pdf, report.docx",
         "prompt": "What is the summary?",
         "answer": "This is the summary.",
-        "evaluation": "yes",
+        "output_passed": "yes",
+        "eval_reason": "The summary was concise and accurate.",
+        "model_name": "gemini-2.5-pro",
         "temperature": 0.5,
         "top_p": 0.9
     }
@@ -61,42 +65,56 @@ def test_log_interaction_inserts_correct_data(db_manager):
 
     with sqlite3.connect(db_manager.db_path) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT document_names, prompt, answer, evaluation, temperature, top_p FROM interactions")
+        cursor.execute("SELECT document_names, prompt, answer, output_passed, eval_reason, model_name, temperature, top_p FROM interactions")
         row = cursor.fetchone()
         assert row is not None, "No row was inserted into the database."
         
         retrieved_data = dict(zip(test_data.keys(), row))
         assert retrieved_data == test_data
-
-def test_schema_migration_adds_missing_columns(tmp_path):
+        
+def test_schema_migration_handles_rename_and_addition(tmp_path):
     """
-    Tests that the DatabaseManager can add missing columns to an existing
-    database, simulating a schema migration.
+    Tests that the DatabaseManager correctly migrates an old-schema database,
+    renaming 'evaluation' and adding all new columns.
     """
     db_path = tmp_path / "migration_test.db"
 
-    # old version of db (without temp and top_p)
+    # reates DB with OLD schema
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE interactions (
                 id INTEGER PRIMARY KEY,
                 timestamp TEXT,
+                document_names TEXT,
                 prompt TEXT,
                 answer TEXT,
                 evaluation TEXT
             )
         """)
+        # add data row to ensure it's preserved
+        cursor.execute("INSERT INTO interactions (evaluation) VALUES ('yes')")
         conn.commit()
 
     # initialize DatabaseManager on existing, old-schema database,
     # shall trigger migration logic in _setup_database
     DatabaseManager(db_path=str(db_path))
 
-    # verify new columns added
+    # verify schema is now correct and data intact
     with sqlite3.connect(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("PRAGMA table_info(interactions)")
         columns = [row[1] for row in cursor.fetchall()]
+
+        # verify renaming and new columns added
+        assert 'output_passed' in columns, "Migration failed to rename 'evaluation'."
+        assert 'evaluation' not in columns, "Old 'evaluation' column should no longer exist."
+        assert 'model_name' in columns, "Migration failed to add 'model_name' column."
+        assert 'eval_reason' in columns, "Migration failed to add 'eval_reason' column."
         assert 'temperature' in columns, "Migration failed to add 'temperature' column."
         assert 'top_p' in columns, "Migration failed to add 'top_p' column."
+
+        # verify data was preserved during rename
+        cursor.execute("SELECT output_passed FROM interactions")
+        data = cursor.fetchone()
+        assert data[0] == 'yes', "Data was not preserved during column rename."        
