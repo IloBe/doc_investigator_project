@@ -1,18 +1,20 @@
 # Document Investigation AI
 
-This interactive **<i>Gradio</i> application** allows users to upload documents of type <i>pdf, word doc, txt and excel</i>. Then the user can querying the document content using the Google Gemini API via user input prompts. If the user prompt task is not allowed, the user will be informed about it. In the positive case: Until the LLM output prompt is created, the specific UI text message "Your answer will appear here..." changes its colour to light grey. This can take a few seconds. At the same position, the final result and the associated evaluation window with its 'yes' or 'no' radio buttons pops up.<br>
-If a document with a wrong type shall be uploaded (e.g. png image), an error message appeared to inform the user which kind of document types are possible.
+This interactive **<i>Gradio</i> application** allows users to upload documents of type <i>pdf, word doc, txt and excel</i> on the first **<i>Investigation'</i>** tab. Then the user can querying the document content using the Google Gemini API via user input prompts. If the user prompt task is not allowed, the user will be informed about it. In the positive case: Until the LLM output prompt is created, the specific UI text message "Your answer will appear here..." changes its colour to light grey. This can take a few seconds. At the same position, the final LLM result, the associated user evaluation window with its 'yes' or 'no' radio buttons and the optional task to add a reason for the evaluation passed decison pops up.<br>
+If a document with a wrong type shall be uploaded (e.g. png image), an error message appeared to inform the user which kind of document types are possible.<br>
+
+The second **<i>'Evaluation Analysis'</i>** tab is used for the required evaluation analysis workflow tasks. As a first option, the investigation and evaluation information triggered on the first tab can be monitored by a <i>Datasette</i> call to get the entire stored information of an <i>SQLite</i> database. This data shall be stored as <i>'evaluation.csv'</i> file in projects <i>'data'</i> directory. Afterwards as a second option, it is possible to create a **data profiling report**. Its overview is shown on that page, but not all interactive features can be triggered, therefore you can export this data report as an <i>'.html'</i> file into the <i>'reports'</i> directory to use all its features on your usual browser. 
 
 As a starting point for this use case, a single script PoC file has been generated. An example .pdf document about a movie dataset has been added to get a first manual impression of application and evaluation usage.
 
-Afterwards, this **PoC** approach has been transfered to an **MVP** project level. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. The evaluation feature can be monitored by a <i>Datasette</i> call to get the entire stored evaluation information of an <i>SQLite</i> database. Furthermore, a unit test suite for database handling, some UI workflows and basic LLM behaviour as test examples are added. Have in mind, that because of the LLM tests, we will not always reach a 100% test coverage.
+Afterwards, this **PoC** approach has been transfered to an **MVP** project level. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. Furthermore, a unit test suite for database handling, some UI workflows and basic LLM behaviour as test examples are added. Have in mind, that because of the LLM tests, we will not always reach a 100% test coverage.
 
 As a prerequisite, you need a **Google Gemini API Key**. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i> and source it or use the export CLI command mentioned below.
 
 Further, detailed technical project and software information can be found in the second README file of the project folder **doc_investigator_project**.
 
-## Application User Interface
-![application user interface](doc_investigation_app.JPG)
+## Application User Interface - Overview
+![application user interface overview](./assets/doc_investigation_app.JPG)
 <br>
 
 ## MVP Project Structure
@@ -92,13 +94,27 @@ pytest
 It will use <i>pytest-asyncio</i> to correctly run both synchronous and asynchronous tests, providing a complete and robust testing suite for our application regarding the standard unit-tests. Regarding the LLM tests, they sometimes fail. Because of the LLM nature, we don't know when this will happen.
 
 ### Observe the Logged Data
-After using the entire project applicatoin, you can explore the doc_investigator_prod.db database with Datasette:
+#### Application User Interface - Evaluation Analysis
+![application user interface for tab 2 evaluation analysis](./asstes/doc_invest_eval_analyse-datasette.JPG)
+<br>
+
+#### Option 1 - Datasette
+After using the entire project application, you can explore the doc_investigator_prod.db database with Datasette:
 ```bash
 datasette doc_investigator_prod.db --open
 ```
 
-In the application, general information is given with its second tab. This CLI command will launch a web server and open a new browser tab. You will see a fully interactive dashboard for your database. You can:
+This CLI command will launch a web server and open a new browser tab. You will see a fully interactive dashboard for your database. You can:
 -    Click on the interactions table to view all your logged data
 -    Sort and filter columns with a few clicks
 -    Run custom SQL queries to perform more complex analysis (e.g. SELECT * FROM interactions WHERE evaluation LIKE '%Yes%')
--    Export data to CSV or JSON
+-    Export data to CSV or JSON  (Note: for your data profiling report an export as file 'evaluation.csv' to the data directory is mandatory!)
+
+#### Option 2 - Data Profiling Report
+After having stored the <i>'evaluation.csv'</i> file in the appropriate directory a data profiling report can be created, visualised and exported. The export is necessary, if you want to use all interactive features of the report file. During the export process a specific process information is visible including the reports label with timestamp. 
+
+![application user interface for tab 2 evaluation analysis](./asstes/doc_invest_eval_analyse-reports-1.JPG)
+<br>
+
+![application user interface for tab 2 evaluation analysis](./asstes/doc_invest_eval_analyse-reports-3.JPG)
+<br>

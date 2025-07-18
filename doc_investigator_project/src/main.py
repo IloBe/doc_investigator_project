@@ -13,6 +13,7 @@ to serve the Gradio-based user interface.
 # ... nevertheless, is not always working during pytest run,
 # why? https://github.com/numpy/numpy/issues/26414
 # seems to be an issue between WSL ubuntu, MS Windows and numpy
+import warnings
 warnings.filterwarnings(    
     "ignore",
     message=".*does not match any known type.*",
