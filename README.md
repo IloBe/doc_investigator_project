@@ -95,7 +95,7 @@ It will use <i>pytest-asyncio</i> to correctly run both synchronous and asynchro
 
 ### Observe the Logged Data
 #### Application User Interface - Evaluation Analysis
-![application user interface for tab 2 evaluation analysis](./asstes/doc_invest_eval_analyse-datasette.JPG)
+![application user interface for tab 2 evaluation analysis](./assets/doc_invest_eval_analyse-datasette.JPG)
 <br>
 
 #### Option 1 - Datasette
@@ -113,8 +113,8 @@ This CLI command will launch a web server and open a new browser tab. You will s
 #### Option 2 - Data Profiling Report
 After having stored the <i>'evaluation.csv'</i> file in the appropriate directory a data profiling report can be created, visualised and exported. The export is necessary, if you want to use all interactive features of the report file. During the export process a specific process information is visible including the reports label with timestamp. 
 
-![application user interface for tab 2 evaluation analysis](./asstes/doc_invest_eval_analyse-reports-1.JPG)
+![application user interface for tab 2 evaluation analysis](./assets/doc_invest_eval_analyse-reports-1.JPG)
 <br>
 
-![application user interface for tab 2 evaluation analysis](./asstes/doc_invest_eval_analyse-reports-3.JPG)
+![application user interface for tab 2 evaluation analysis](./assets/doc_invest_eval_analyse-reports-3.JPG)
 <br>
