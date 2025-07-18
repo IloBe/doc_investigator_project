@@ -1,0 +1,42 @@
+id,timestamp,document_names,prompt,answer,output_passed,temperature,top_p,model_name,eval_reason
+1,2025-07-12 20:41:12,MovieTweetingRecords_crowdrec2013_Dooms.pdf,list all datasets,"Based on the context provided, the following datasets are mentioned:
+*   MovieLens
+*   Netflix
+*   MovieTweetings
+*   MovieLens 100K",yes,0.2,0.95,,
+2,2025-07-12 21:08:05,MovieTweetingRecords_crowdrec2013_Dooms.pdf,who has written the text?,"Simon Dooms, Toon De Pessemier, and Luc Martens",yes,0.2,0.95,,
+3,2025-07-12 21:10:44,MovieTweetingRecords_crowdrec2013_Dooms.pdf,What is the content about?,"This content is about a new movie rating dataset called 'MovieTweetings', which is constructed from public and well-structured tweets posted on Twitter. The paper presents this dataset as a modern and always up-to-date alternative to older datasets like MovieLens and Netflix, which are becoming outdated. The ratings are collected daily by querying the Twitter Search API for tweets containing the string ‘I rated’ and the hashtag ‘#IMDb’, which are typically auto-generated when a user rates a movie on the IMDb website and shares it. The paper provides metrics for the dataset, such as having over 60,000 ratings at the time of writing, and notes that it is unfiltered and available for download on GitHub.",yes,0.2,0.95,,
+4,2025-07-12 21:12:51,MovieTweetingRecords_crowdrec2013_Dooms.pdf,Summarize the content in 4 short sentences.,"Public rating datasets like MovieLens and Netflix are becoming outdated and fail to incorporate new and relevant movies. This paper introduces a new movie rating dataset called ‘MovieTweetings,’ which is constructed from public, well-structured tweets. The data is collected daily from Twitter by searching for tweets containing the string ‘I rated’ and the hashtag ‘#IMDb’, which are auto-generated when users share their ratings from the IMDb website. The resulting dataset is unfiltered, updated daily with around 500 new ratings, and serves as a modern, natural rating resource for movie recommenders.",yes,0.2,0.95,,
+5,2025-07-12 21:13:32,MovieTweetingRecords_crowdrec2013_Dooms.pdf,"List all mentioned datasets, but only once.","*   MovieLens
+*   Netflix
+*   MovieTweetings
+*   MovieLens 100K",yes,0.2,0.95,,
+6,2025-07-12 21:15:35,MovieTweetingRecords_crowdrec2013_Dooms.pdf,Give me an interpretation of figure 1.,"Figure 1 shows the distribution of the number of ratings per user and the cumulative percentage of the total amount of ratings. The figure shows a long tail distribution, with most of the users having rated only 1 item.",no,0.2,0.95,,
+7,2025-07-12 21:18:00,RealPython_decorators-cheatsheet.pdf,What is the most important decorator mentioned here?,"Your request is unknown, associated information is not available. Please try again",yes,0.2,0.95,,
+8,2025-07-12 21:18:38,RealPython_decorators-cheatsheet.pdf,What is the topic of this pdf file?,"Based on the title and content, the topic of this PDF file is ""Python Decorators Examples"". It is a cheat sheet from Real Python.",yes,0.2,0.95,,
+9,2025-07-12 21:25:51,Testfile_languages.txt,tell me something about this file content,"The file content includes text in German, Spanish, and English. It states that all feature branches are created off the latest code state of a project, which is assumed to be in the main branch. It also lists the following CLI commands: git checkout main, git fetch origin, and git reset --hard origin/main. Additionally, there are lines with gibberish text and numbers.",yes,0.2,0.95,,
+10,2025-07-12 21:27:32,Testfile_languages.txt,"As the file name says, it is about languages, which ones?","Based on the provided text, the languages are German (""Beispieltext in anderen Sprachen""), English (""another language""), and Spanish (""¿Cómo estás?"").",yes,0.2,0.95,,
+11,2025-07-12 21:29:40,Testfile_languages.txt,"As the file name says, it is about languages, which ones?","Based on the context provided, the languages are German (""Beispieltext in anderen Sprachen""), Spanish (""¿Cómo estás?""), and English (""another language"", ""All feature branches are created off the latest code state of a project."").",yes,0.2,0.95,,
+12,2025-07-12 21:30:57,Testfile_languages.txt,"As the file name says, it is about languages, which ones?","Based on the context provided, the languages included are German (""Beispieltext in anderen Sprachen""), Spanish (""¿Cómo estás?""), and English (""another language"" and the paragraph about feature branches).",yes,0.2,0.95,,
+13,2025-07-12 21:33:31,PdF-Europawahlprogramm-fuer-2024.pdf,worüber berichtet die Datei?,"Die Datei berichtet über das Wahlprogramm der ""Partei des Fortschritts"" (PdF) für die Europawahl 2024 unter dem Motto ""Ideen statt Ideologien"". Das Dokument ist in eine Präambel, eine Gliederung, eine Kurzversion und eine Langversion unterteilt. Thematisch gliedert sich das Programm in 10 Bereiche: Grundsätze, Reform der EU und Rechtsstaatlichkeit, Verteidigung und Sicherheit, Migration und Asyl, Wirtschaft und Verkehr, Soziales und Bildung, Klima-, Umwelt- und Naturschutz, Digitalisierung, Gesundheit und Außenpolitik.",yes,0.2,0.95,,
+14,2025-07-12 21:35:24,PdF-Europawahlprogramm-fuer-2024.pdf,De quoi le fichier fait-il état ?,"Votre request est inconnue, associated information is not available. Please try again",no,0.2,0.95,,
+15,2025-07-12 21:37:18,MovieTweetingRecords_crowdrec2013_Dooms.pdf,How many diagrams are in the doc?,"There is one diagram in the document, labeled as Figure 1.",yes,0.2,0.95,,
+16,2025-07-12 21:38:04,MovieTweetingRecords_crowdrec2013_Dooms.pdf,How many reference items are listed?,There are 4 reference items listed.,yes,0.2,0.95,,
+17,2025-07-12 21:39:40,MovieTweetingRecords_crowdrec2013_Dooms.pdf,List all references,"[1] Simon Dooms, Toon De Pessemier, Dieter Verslype, Jelle Nelis, Jonas De Meulenaere, Wendy Van den Broeck, Luc Martens, and Chris Develder. Omus: an optimized multimedia service for the home environment. Multimedia Tools and Applications, 2013.
+[2] Jonathan L Herlocker, Joseph A Konstan, Al Borchers, and John Riedl. An algorithmic framework for performing collaborative ﬁltering. In Proceedings of the 22nd annual international ACM SIGIR conference on Research and development in information retrieval, pages 230–237. ACM, 1999.
+[3] James Bennett and Stan Lanning. The netﬂix prize. In Proceedings of KDD cup and workshop, volume 2007, page 35, 2007.
+[4] Guy Shani and Asela Gunawardana. Evaluating recommendation systems. In Recommender systems handbook, pages 257–297. Springer, 2011.",yes,0.2,0.95,,
+18,2025-07-12 21:40:47,MovieTweetingRecords_crowdrec2013_Dooms.pdf,"Because you are an LLM, tell me about your version.","Your request is unknown, associated information is not available. Please try again",yes,0.2,0.95,,
+19,2025-07-12 21:42:51,requirementsExample.txt,what is this file about,"This file lists Python package requirements, categorized as follows:
+
+*   Core AI/LLM Framework
+*   UI & PDF Handling (Workshop 1)
+*   Data Exploration & Logging (Workshop 1)
+*   Environment & Notebooks
+*   Deployment (Optional - for Modal)
+
+The file also notes that specific versions are missing and that the list is based on imports found in the code, not including transitive dependencies.",yes,0.2,0.95,,
+20,2025-07-12 21:45:05,MIT_TheAIRiskRepository_13_8_2024.pdf,How many AI risk classifications are there?,"Based on the context, the AI Risk Repository was created by extracting 777 risks from 43 taxonomies. The text also states, ""A total of 43 articles and reports met the eligibility criteria"" for the review of AI risk classifications, frameworks, and taxonomies.",yes,0.2,0.95,,
+21,2025-07-12 21:45:52,MIT_TheAIRiskRepository_13_8_2024.pdf,How many AI risks are there?,"Based on the context provided, the included documents presented a total of 777 risk categories or sub-categories of risk. This information was extracted from 43 documents and compiled into a ""living"" database.",yes,0.2,0.95,,
+22,2025-07-12 21:46:42,MIT_TheAIRiskRepository_13_8_2024.pdf,How many AI risks are there?,The AI Risk Repository contains a living database of 777 risks extracted from 43 taxonomies. The included documents presented a total of 777 risk categories or sub-categories of risk.,yes,0.2,0.95,,
+23,2025-07-12 22:47:55,MIT_TheAIRiskRepository_13_8_2024.pdf,Who has written this document?,"The document was written by Peter Slattery, Alexander K. Saeri, Emily A. C. Grundy, Jess Graham, Michael Noetel, Risto Uuk, James Dao, Soroush Pour, Stephen Casper, and Neil Thompson.",yes,0.2,0.95,,

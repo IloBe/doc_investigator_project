@@ -60,6 +60,7 @@ def setup_logging(config: Config) -> None:
     except Exception as e:
         # don't want log cleanup to crash app, so just print a warning.
         logger.warning("[WARNING] Could not perform log file cleanup...", exc_info=e)
+        pass
     
     # --- loguru configuration ---
     log_format = (
@@ -92,7 +93,8 @@ def setup_logging(config: Config) -> None:
         retention = 5,       # keep max 5 log files
         compression = "zip", # compress old log files
         enqueue = True,      # make logging thread-safe
-        serialize = False    # True for JSON-structured logs
+        serialize = False,   # True for JSON-structured logs
+        diagnose = True      # make tracebacks pickleable
     )
 
     logger.info("Logger has been initialized successfully with retention policy of 5 files.")
