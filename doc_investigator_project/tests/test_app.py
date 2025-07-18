@@ -13,10 +13,8 @@ from unittest.mock import MagicMock, patch
 from doc_investigator_strategy_pattern.app import AppUI
 from doc_investigator_strategy_pattern.documents import InvalidFileTypeException
 
-# using pytest-asyncio's 'asyncio' marker for explicit async tests
-# get rid off warning filter to suppress DeprecationWarning from gradio
+# get rid off warning filter to suppress DeprecationWarning from Gradio
 pytestmark = [
-    pytest.mark.asyncio,
     pytest.mark.filterwarnings("ignore:There is no current event loop:DeprecationWarning:gradio.utils")
 ]
 
@@ -35,6 +33,7 @@ def app_ui(mock_services):
     """Provides an AppUI instance with all backend services mocked."""
     return AppUI(**mock_services)
 
+@pytest.mark.asyncio
 async def test_handle_investigation_success(app_ui, mock_services):
     """
     Tests the main investigation workflow on a successful path.
@@ -63,6 +62,7 @@ async def test_handle_investigation_success(app_ui, mock_services):
     assert panel_update['visible'] is True
     mock_services["db_manager"].log_interaction.assert_not_called()
 
+@pytest.mark.asyncio    
 async def test_handle_investigation_unknown_answer_logs_correctly(app_ui, mock_services):
     """
     Tests that a non-answer is auto-logged with the new, correct schema.
@@ -93,6 +93,7 @@ async def test_handle_investigation_unknown_answer_logs_correctly(app_ui, mock_s
     assert call_kwargs['temperature'] == 0.2
     assert call_kwargs['top_p'] == 0.95    
 
+@pytest.mark.asyncio
 async def test_handle_file_validation_failure(app_ui, mock_services):
     """
     Tests that the file validation handler catches an exception and returns None.
@@ -110,6 +111,7 @@ async def test_handle_file_validation_failure(app_ui, mock_services):
     assert result is None, "The handler should return None to clear the Gradio component."
     mock_gr_warning.assert_called_once(), "gr.Warning should have been called to inform the user."
 
+@pytest.mark.asyncio
 async def test_handle_evaluation_success_with_reason(app_ui, mock_services):
     """Tests the evaluation handler for a successful submission."""
     # Arrange
@@ -134,6 +136,7 @@ async def test_handle_evaluation_success_with_reason(app_ui, mock_services):
     assert result[0] is None   # file_uploader reset
     assert result[1] == ""     # prompt_input reset
 
+@pytest.mark.asyncio
 async def test_handle_evaluation_success_with_no_reason(app_ui, mock_services):
     """Tests the evaluation handler logs correctly when no reason is provided."""
     choice = "❌ No, the answer is not helpful or inaccurate."
@@ -149,3 +152,80 @@ async def test_handle_evaluation_success_with_no_reason(app_ui, mock_services):
     call_kwargs = mock_services["db_manager"].log_interaction.call_args.kwargs
     assert call_kwargs['output_passed'] == 'no'
     assert call_kwargs['eval_reason'] == 'no reason given' # Check for default
+
+@patch('doc_investigator_strategy_pattern.app.analysis.generate_profile_report')
+def test_handle_profile_generation_success(mock_generate_report, app_ui):
+    """
+    Test Case: Successful profile generation in the UI.
+    Checks that the handler returns the correct HTML, state object, and enabled button.
+    """
+    # Arrange:
+    # - Create a mock ProfileReport object that our mocked analysis function will return.
+    mock_profile = MagicMock()
+    mock_profile.to_html.return_value = "<h1>Mock Report HTML</h1>"
+    mock_generate_report.return_value = mock_profile
+
+    # Act:
+    html_output, state_output, button_update = app_ui._handle_profile_generation()
+
+    # Assert:
+    mock_generate_report.assert_called_once()
+    assert html_output == "<h1>Mock Report HTML</h1>"
+    assert state_output is mock_profile
+    assert button_update == gr.update(interactive=True)
+
+@patch('doc_investigator_strategy_pattern.app.analysis.generate_profile_report', return_value=None)
+def test_handle_profile_generation_failure(mock_generate_report, app_ui):
+    """
+    Test Case: Failed profile generation in the UI (e.g., file not found).
+    Checks that the handler returns an error message and a disabled button.
+    """
+    # Arrange:
+    # - The mock is already configured to return None by the patch decorator.
+
+    # Act:
+    html_output, state_output, button_update = app_ui._handle_profile_generation()
+
+    # Assert:
+    mock_generate_report.assert_called_once()
+    assert "Error:" in html_output
+    assert state_output is None
+    assert button_update == gr.update(interactive=False)
+
+@patch('doc_investigator_strategy_pattern.app.os.makedirs')
+@patch('doc_investigator_strategy_pattern.app.gr.Info')
+def test_handle_export_html_success(mock_gr_info, mock_makedirs, app_ui):
+    """
+    Test Case: Successful HTML export.
+    Checks that the report's to_file method is called with a correctly formatted path.
+    """
+    # Arrange:
+    mock_profile = MagicMock()
+    
+    # Act:
+    app_ui._handle_export_html(mock_profile)
+
+    # Assert:
+    mock_makedirs.assert_called_once_with("reports", exist_ok=True)
+    # checks report file is saved in 'reports' dir with correct format
+    mock_profile.to_file.assert_called_once()
+    saved_path = mock_profile.to_file.call_args.args[0]
+    assert saved_path.startswith("reports/profiling_report_")
+    assert saved_path.endswith(".html")
+    # checks user receives a confirmation popup
+    mock_gr_info.assert_called_once()
+
+@patch('doc_investigator_strategy_pattern.app.gr.Warning')
+def test_handle_export_html_no_report(mock_gr_warning, app_ui):
+    """
+    Test Case: User tries to export before a report is generated.
+    Checks that a warning is shown.
+    """
+    # Arrange:
+    # - The state passed to the handler is None.
+
+    # Act:
+    app_ui._handle_export_html(None)
+
+    # Assert:
+    mock_gr_warning.assert_called_once_with("No report has been generated yet. Please generate the report first.")
