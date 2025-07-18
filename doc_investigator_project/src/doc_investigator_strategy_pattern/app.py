@@ -9,13 +9,27 @@ acts as the central controller that connects user actions to the
 backend services (document processing, AI and database).
 """
 
+# --- FIX: Suppress noisy dependency warnings at the very start ---
+# handle warnings from third-party libs that are not critical for app's function,
+# appears with old WSL ubuntu version 20.04 on Windows 10 and Python 3.10 version, see:
+# https://github.com/numpy/numpy/issues/22187
+import warnings
+warnings.filterwarnings(
+    "ignore",
+    message="Signature b'\\x00\\xd0\\xcc\\xcc\\xcc\\xcc\\xcc\\xcc\\xfb\\xbf\\x00\\x00\\x00\\x00\\x00\\x00' for <class 'numpy.longdouble'> does not match any known type")
+warnings.filterwarnings("ignore", message="Upgrade to ydata-sdk")
+# ---
+
 import gradio as gr
 import os
 import sqlite3
+from datetime import datetime
 from typing import Any, List, Optional, Tuple
 from loguru import logger
+from ydata_profiling import ProfileReport
 
 from .documents import InvalidFileTypeException
+from . import analysis
 
 # if typing, avoid circular imports at runtime
 from typing import TYPE_CHECKING
@@ -76,12 +90,15 @@ class AppUI:
             block_radius = "12px",
             input_background_fill = "#F7F7F7",
         )
-
-        with gr.Blocks(theme=theme, title="Document Investigator") as app:
+        
+        with gr.Blocks(theme=theme,
+                       title="Document Investigator",
+                      ) as app:
             # --- State Management ---
             state_doc_names = gr.State(None)
             state_last_prompt = gr.State(None)
             state_last_answer = gr.State(None)
+            state_profile_report = gr.State(None)
 
             # --- UI Layout ---
             gr.Markdown(
@@ -95,15 +112,16 @@ class AppUI:
             with gr.Tabs():
                 with gr.TabItem("Investigate"):
                     self._build_investigate_tab(state_doc_names, state_last_prompt, state_last_answer)
-                with gr.TabItem("Analyze Evaluations"):
-                    self._build_analyze_tab()
+                with gr.TabItem("Evaluation Analysis"):
+                    self._build_analyze_tab(state_profile_report)
         return app
 
 
     def _build_investigate_tab(self,
         state_doc_names: gr.State,
         state_last_prompt: gr.State,
-        state_last_answer: gr.State
+        state_last_answer: gr.State,
+        state_profile_report = gr.State(None),
     ) -> None:
         """Builds the main 'Investigate' tab UI components."""
         gr.Markdown(
@@ -188,28 +206,121 @@ class AppUI:
         )
 
 
-    def _build_analyze_tab(self) -> None:
-        """Builds the 'Analyze Evaluations' tab UI components."""
-        gr.Markdown(
-            """
-            ### Analyzing Evaluation Data with Datasette
-            All interactions and evaluations are stored in a local SQLite database (`doc_investigator_prod.db`).
-            Datasette provides an instant, read-only web interface to explore this data for analysis.
+    def _build_analyze_tab(self, state_profile_report: gr.State) -> None:
+        """
+        Builds the 'Analyze Evaluations' tab UI components with sections of Datasette and data profiling,
+        including customized styling.
+        """
+        with gr.Blocks() as analyze_tab:
+            gr.Markdown(
+                """
+                ## Evaluation Analysis Tools
+                This section provides two ways to analyze the collected evaluation data.
+                """
+            )
+            
+            with gr.Accordion(
+                label='Option 1: Manual Analysis with Datasette',
+                open=True,
+            ):
+                gr.Markdown(
+                    """
+                    All interactions and evaluations are stored in a local SQLite database (`doc_investigator_prod.db`).
+                    Datasette provides an instant, read-only web interface to explore this data for analysis.
 
-            **Instructions:**
-            1.  Open a new terminal or command prompt in this project's directory.
-            2.  Click the button below to copy the command.
-            3.  Paste the command into your terminal and press Enter.
-            4.  Your web browser will open with the Datasette interface, ready to explore the `interactions` table.
-            """
-        )
-        datasette_command = f"datasette {self.config.DB_FILE} --open"
-        gr.Textbox(
-            value = datasette_command,
-            label = "Command to run Datasette",
-            interactive = False,
-            show_copy_button = True
-        )
+                    **Instructions:**
+                    1.  Open a new terminal or command prompt in this project's directory.
+                    2.  Click the button below to copy the command.
+                    3.  Paste the command into your terminal and press Enter.
+                    4.  Your web browser will open with the Datasette interface, ready to explore the `interactions` table.
+                    5.  For creation of the automated data profiling report, store content as `evaluations.csv` in `data` directory.
+                    """
+                )
+                datasette_command = f"datasette {self.config.DB_FILE} --open"
+                gr.Textbox(
+                    value=datasette_command,
+                    label="Command to run Datasette",
+                    interactive=False,
+                    show_copy_button=True
+                )
+            
+            with gr.Accordion(
+                label="Option 2: Automated Data Profiling Report",
+                open=False,
+            ):
+                gr.Markdown(
+                    """
+                    Generate a detailed data profile report from the `data/evaluations.csv` file.
+                    You get a statistical overview of the entire dataset, including distributions,
+                    correlations, missing values and potential data quality issues.
+
+                    **Instructions:**
+                    1.  Ensure you have exported your database `interactions` table to `data/evaluations.csv` via Datasette.
+                    2.  Click the blue button below to generate or refresh the report. Its overview is visualised afterwards.
+                    3.  After generating, you can export the report as a self-contained HTML file.
+                    4.  Export of profiling report is necessary to get all interactive features of this information.
+                    """
+                )
+                profile_button = gr.Button("Generate/Refresh Profile Report", variant="primary")
+                export_html_button = gr.Button("Export to HTML", interactive=False)
+                
+                with gr.Group():
+                    profile_output = gr.HTML(
+                        "<div style='text-align:center; color:grey;'><p>Area to show the data profile report.</p></div>"
+                    )
+                    
+
+           # Event handling for profiling section
+            profile_button.click(
+                fn=self._handle_profile_generation,
+                inputs=None,
+                outputs=[profile_output, state_profile_report, export_html_button]
+            )
+
+            export_html_button.click(
+                fn=self._handle_export_html,
+                inputs=[state_profile_report],
+                outputs=None
+            )         
+
+    
+    def _handle_profile_generation(self) -> Tuple[str, Optional[ProfileReport], Any]:
+        """
+        Event handler to generate, display and enable the export of the data profile report.
+        """
+        csv_path = os.path.join("data", "evaluations.csv")
+        gr.Info("Generating data profile... This may take a moment.")
+        profile = analysis.generate_profile_report(csv_path=csv_path)
+
+        if profile:
+            return profile.to_html(), profile, gr.update(interactive=True)
+        else:
+            error_html = "<p style='color:red; text-align:center;'><b>Error:</b> Could not generate report. Please check if a none empty `data/evaluations.csv` exists.</p>"
+            return error_html, None, gr.update(interactive=False)
+
+        
+    def _handle_export_html(self, profile: Optional[ProfileReport]) -> None:
+        """
+        Saves the generated profile report to a timestamped HTML file.
+        """
+        if not profile:
+            gr.Warning("No report has been generated yet. Please generate the report first.")
+            return
+
+        reports_dir = "reports"
+        os.makedirs(reports_dir, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"profiling_report_{timestamp}.html"
+        filepath = os.path.join(reports_dir, filename)
+
+        try:
+            profile.to_file(filepath)
+            logger.success(f"Successfully exported report to '{filepath}'.")
+            gr.Info(f"Success! Report saved to: {filepath}")
+        except Exception as e:
+            logger.error(f"Failed to export report to file. Error: {e}", exc_info=True)
+            gr.Error(f"Failed to save the report. Please check the logs.")    
 
 
     def _handle_file_validation(self, files: Optional[List[Any]]) -> Optional[List[Any]]:

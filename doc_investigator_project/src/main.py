@@ -8,6 +8,18 @@ This script initializes all core components and starts the Uvicorn server
 to serve the Gradio-based user interface.
 """
 
+# Fix for numpy warnings,
+# MUST be at the absolute top of the file, before any other imports,
+# ... nevertheless, is not always working during pytest run,
+# why? https://github.com/numpy/numpy/issues/26414
+# seems to be an issue between WSL ubuntu, MS Windows and numpy
+warnings.filterwarnings(    
+    "ignore",
+    message=".*does not match any known type.*",
+    category=UserWarning,
+    module="numpy._core.getlimits"
+)
+
 import gradio as gr
 import getpass
 import os

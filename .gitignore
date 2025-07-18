@@ -1,5 +1,8 @@
 # project specific
 ./logs/*.*
+./reports/*.*
+./data/*.*
+./doc_investigator_prod.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
