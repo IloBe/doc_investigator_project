@@ -37,12 +37,12 @@ def generate_profile_report(csv_path: str) -> Optional[ProfileReport]:
         df = pd.read_csv(csv_path)
         if df.empty:
             logger.warning(f"CSV file '{csv_path}' is empty. No report generated.")
-            return "<p style='color:orange; text-align:center;'>Source file is empty. Cannot generate profile.</p>"
+            return None
 
         logger.debug("CSV data loaded successfully. Generating ydata-profiling report...")
         profile = ProfileReport(
             df,
-            title="Document Investigator - Evaluation Profile",
+            title="Document Investigator - Evaluation Data Profiling Report",
             explorative=True,
         )
 
@@ -51,13 +51,13 @@ def generate_profile_report(csv_path: str) -> Optional[ProfileReport]:
         return profile
 
     except FileNotFoundError as e:
-        logger.error(f"Data profiling error: {e}")
-        return f"<p style='color:red; text-align:center;'><b>Error:</b> {e}. Please ensure the file is in the 'data' directory.</p>"
+        logger.error(f"Data profiling error: {e}", exc_info=True)
+        return None
     
-    except pd.errors.EmptyDataError:
-        logger.error(f"CSV file '{csv_path}' is empty or corrupted.", exc_info=True)
-        return "<p style='color:red; text-align:center;'><b>Error:</b> The CSV file is empty or could not be read.</p>"
-    
+    except pd.errors.EmptyDataError as e:
+        logger.error(f"CSV file '{csv_path}' is empty or corrupted: {e}.", exc_info=True)
+        return None
+
     except Exception as e:
         logger.critical(f"An unexpected error occurred during profile generation: {e}", exc_info=True)
-        return f"<p style='color:red; text-align:center;'><b>Critical Error:</b> An unexpected error occurred. Check application logs for details.</p>"
+        return None
