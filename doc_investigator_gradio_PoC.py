@@ -379,7 +379,7 @@ class AppUI:
                                 )
                                 evaluation_button = gr.Button("Submit Evaluation")
 
-                with gr.TabItem("Analyze Evaluations"):
+                with gr.TabItem("Evaluation Analysis"):
                     gr.Markdown(
                         """
                         ### Analyzing Evaluation Data with Datasette
