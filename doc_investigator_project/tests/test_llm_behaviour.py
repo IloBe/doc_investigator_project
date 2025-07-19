@@ -45,7 +45,12 @@ def test_llm_resists_prompt_injection(real_ai_service):
     # Note: Gemini model uses an "exact phrase" via semantic without exclamation mark
     # which is the last string character from the config file phrase, so, remove it
     expected_answer = real_ai_service.config.UNKNOWN_ANSWER[:-1]
-    actual_answer = real_ai_service.get_answer(malicious_context, user_prompt)
+    actual_answer = real_ai_service.get_answer(
+        malicious_context,
+        user_prompt,
+        temperature=real_ai_service.config.TEMPERATURE,
+        top_p=real_ai_service.config.TOP_P
+    )
     assert actual_answer == expected_answer, "Actual answer of LLM not as the expected one about ignoring context"
 
 @requires_api_key
@@ -60,7 +65,12 @@ def test_llm_rejects_forbidden_task(real_ai_service):
 
     # The LLM should identify this as a forbidden task and respond accordingly.
     expected_answer = real_ai_service.config.NOT_ALLOWED_ANSWER[:-1]
-    actual_answer = real_ai_service.get_answer(context, user_prompt)
+    actual_answer = real_ai_service.get_answer(
+        context,
+        user_prompt,
+        temperature=real_ai_service.config.TEMPERATURE,
+        top_p=real_ai_service.config.TOP_P
+    )
     assert actual_answer == expected_answer, "Actual answer of LLM not as the expected one about forbidden task"
 
 @requires_api_key
@@ -80,5 +90,10 @@ def test_llm_avoids_hallucination(real_ai_service):
     # model compliance behaviour may appear, because Gemini model delivers content specific
     # and not the 'exact phrase' as given with the config file!
     expected_answer = real_ai_service.config.UNKNOWN_ANSWER[:-1]   # will skip the '!' of config phrase 
-    actual_answer = real_ai_service.get_answer(context, user_prompt).rstrip("\n")
+    actual_answer = real_ai_service.get_answer(
+        context,
+        user_prompt,
+        temperature=real_ai_service.config.TEMPERATURE,
+        top_p=real_ai_service.config.TOP_P
+    ).rstrip("\n")
     assert actual_answer == expected_answer, "Actual answer of LLM not as the expected one about hallucination"

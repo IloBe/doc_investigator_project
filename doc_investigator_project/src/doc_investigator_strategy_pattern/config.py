@@ -25,14 +25,15 @@ class Config:
      # Use a model name confirmed available via `genai.list_models()`
     # as checked with origin github repo helper file 'check_google_models.py'
     LLM_MODEL_NAME: str = "gemini-2.5-pro"
-    TEMPERATURE: float = 0.2    # low value - more deterministic, focused 
-    TOP_P: float = 0.95         # nucleus sampling parameter
+    TEMPERATURE: float = 0.2    # low value - more deterministic, focused; default value
+    TOP_P: float = 0.95         # nucleus sampling parameter; default value
     MAX_CONTEXT_CHARACTERS: int = 800000 # Corresponds to ~1M tokens for Gemini
 
     # --- Application Logic Settings ---
     UNKNOWN_ANSWER: str = "Your request is unknown, associated information is not available. Please try again!"
     NOT_ALLOWED_ANSWER: str = "Sorry, your task is not allowed. Please try again!"
     NO_REASON_GIVEN: str = "no reason given"
+    MAX_TOKEN_LIMIT_REACHED: str = "Sorry, your task and document context exceeds token maximum limit. Please try again!"
 
     # Whenever you need to create a new Config object,
     # call this lambda function, which will return a brand new list. 
