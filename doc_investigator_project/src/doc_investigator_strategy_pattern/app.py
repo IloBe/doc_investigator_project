@@ -96,13 +96,17 @@ class AppUI:
         with gr.Blocks(theme=theme,
                        title="Document Investigator",
                       ) as app:
+            
             # --- State Management ---
             state_doc_names = gr.State(None)
             state_last_prompt = gr.State(None)
             state_last_answer = gr.State(None)
+            state_temperature = gr.State(None)
+            state_top_p = gr.State(None)
             state_profile_report = gr.State(None)
 
             # --- UI Layout ---
+            # panel header
             gr.Markdown(
                """
                <div style="text-align: center;">
@@ -110,10 +114,16 @@ class AppUI:
                </div>
                """
             )
-
+                        
             with gr.Tabs():
                 with gr.TabItem("Investigate"):
-                    self._build_investigate_tab(state_doc_names, state_last_prompt, state_last_answer)
+                    self._build_investigate_tab(
+                        state_doc_names,
+                        state_last_prompt,
+                        state_last_answer,
+                        state_temperature,
+                        state_top_p,
+                    )
                 with gr.TabItem("Evaluation Analysis"):
                     self._build_analyze_tab(state_profile_report)
         return app
@@ -123,23 +133,56 @@ class AppUI:
         state_doc_names: gr.State,
         state_last_prompt: gr.State,
         state_last_answer: gr.State,
-        state_profile_report = gr.State(None),
+        state_temperature: gr.State,
+        state_top_p: gr.State,
+        #state_profile_report = gr.State(None),
     ) -> None:
         """Builds the main 'Investigate' tab UI components."""
-        gr.Markdown(
-            """
-            ### How to use this tool:
-            1.  **Upload** one or more documents.
-            2.  **Ask a specific question** about their content.
-            3.  Click **"Investigate"** to get an AI-powered answer.
-            4.  **Evaluate** the answer to help improve the system.
-            5.  For **"Exit"** manually close this browser tab, then use 'Ctrl+C' on CLI terminal session.
-
-            **Supported Document Types:** `.pdf`, `.docx`, `.xlsx`, `.txt`
-            """
-        )
+        
+        # first row at the top
         with gr.Row():
-            with gr.Column(scale = 1):
+            # left side for workflow description
+            with gr.Column(scale=2):  # larger horizontal space
+                gr.Markdown(
+                    """
+                    ### How to use this tool:
+                    1.  **LLM parameters** temperature = 0.2 & top-p = 0.95 are defaults being more focused, not creative.
+                    2.  If the LLM output result is not as expected, you can change this LLM parameters.
+                    3.  **LLM output** language follows the **user prompt** language, but default is English.
+                    4.  **Upload** one or more documents.
+                    5.  **Ask a specific question** about their content (user prompt).
+                    6.  Click **"Investigate"** to get an AI-powered answer (LLM output).
+                    7.  **Evaluate** the answer to help improve the system.
+                    8.  For **"Exit"** manually close this browser tab, then use 'Ctrl+C' on CLI terminal session.
+
+                    **Supported Document Types:** `.pdf`, `.docx`, `.xlsx`, `.txt`
+                    """
+                )
+            # right side for LLM settings    
+            with gr.Column(scale=1): 
+                with gr.Accordion(f"LLM Settings ({self.config.LLM_MODEL_NAME})", open=False):
+                    temperature_slider = gr.Slider(
+                        minimum = 0.0,
+                        maximum = 1.0,
+                        step = 0.05,
+                        label = "Temperature",
+                        value = self.config.TEMPERATURE
+                    )
+                    top_p_slider = gr.Slider(
+                        minimum = 0.0,
+                        maximum = 1.0,
+                        step = 0.05,
+                        label = "Top-P",
+                        value = self.config.TOP_P
+                    )
+                    reset_llm_button = gr.Button("Reset to Defaults", variant="secondary")
+        
+        gr.Markdown("---") # Visual separator
+                
+        # second row for core business workflow
+        with gr.Row():
+            # left column for user inputs
+            with gr.Column(scale=1):        
                 file_uploader = gr.File(
                     label = "Step 1: Upload Your Documents",
                     file_count = "multiple",
@@ -147,12 +190,17 @@ class AppUI:
                     # doc type list would block our custom .upload() event handler (_handle_file_validation)
                     file_types = None
                 )
+                
                 prompt_input = gr.Textbox(
                     label = "Step 2: Enter Your Prompt",
                     lines = 4,
                     placeholder = "e.g. 'Summarize key findings in the financial report.'")
+                
                 submit_btn = gr.Button("Investigate", variant="primary")
-            with gr.Column(scale = 2):
+                
+            # right column for LLM params and answer output
+            with gr.Column(scale=2):
+                # LLM result and evaluation part
                 answer_output = gr.Markdown(
                     value = "<p style='color:grey;'>The answer will be shown here...</p>",
                     label = "LLM Answer")
@@ -181,12 +229,16 @@ class AppUI:
         submit_btn.click(
             fn = self._handle_investigation,
             inputs = [file_uploader,
-                      prompt_input],
+                      prompt_input,
+                      temperature_slider,
+                      top_p_slider],
             outputs = [answer_output,
                        evaluation_panel,
                        state_doc_names,
                        state_last_prompt,
-                       state_last_answer]
+                       state_last_answer,
+                       state_temperature,
+                       state_top_p]
         )
 
         evaluation_button.click(
@@ -195,7 +247,9 @@ class AppUI:
                       state_last_prompt,
                       state_last_answer,
                       evaluation_radio,
-                      eval_reason_textbox],
+                      eval_reason_textbox,
+                      state_temperature,
+                      state_top_p],
             outputs = [file_uploader,
                        prompt_input,
                        answer_output,
@@ -204,7 +258,15 @@ class AppUI:
                        eval_reason_textbox, 
                        state_doc_names,
                        state_last_prompt,
-                       state_last_answer]
+                       state_last_answer,
+                       temperature_slider,
+                       top_p_slider]
+        )
+        
+        reset_llm_button.click(
+            fn=lambda: (self.config.TEMPERATURE, self.config.TOP_P),
+            inputs=None,
+            outputs=[temperature_slider, top_p_slider]
         )
 
 
@@ -283,8 +345,8 @@ class AppUI:
                 fn=self._handle_export_html,
                 inputs=[state_profile_report],
                 outputs=None
-            )         
-
+            )
+    
     
     def _handle_profile_generation(self) -> Tuple[str, Optional[ProfileReport], Any]:
         """
@@ -354,11 +416,13 @@ class AppUI:
 
 
     def _handle_investigation(self,
-        files: Optional[List[Any]],
-        prompt: str
+                              files: Optional[List[Any]],
+                              prompt: str,
+                              temperature: float,
+                              top_p: float
     ) -> Tuple[Any, ...]:
         """
-        Orchestrates the main investigation workflow.
+        Orchestrates the main investigation workflow with dynamic LLM parameters.
 
         Raises:
             gr.Error: If user inputs are invalid (no files, no prompt).
@@ -381,14 +445,20 @@ class AppUI:
                     f"Context length ({len(full_text)}) exceeds limit. Truncating to {self.config.MAX_CONTEXT_CHARACTERS} characters.")
                 full_text = full_text[:self.config.MAX_CONTEXT_CHARACTERS]
 
-            answer = self.ai_service.get_answer(full_text, prompt)
+            answer = self.ai_service.get_answer(full_text, prompt, temperature, top_p)
 
             # check if answer is real one or a pre-defined inappropriate response
             is_real_answer = answer not in [self.config.UNKNOWN_ANSWER, self.config.NOT_ALLOWED_ANSWER] and "error" not in answer.lower()
 
             if is_real_answer:
                 logger.success("Correct answer received. Displaying to user for evaluation.")
-                return gr.update(value = answer), gr.update(visible = True), doc_names, prompt, answer
+                return (gr.update(value = answer),
+                        gr.update(visible = True),
+                        doc_names, 
+                        prompt, 
+                        answer, 
+                        temperature, 
+                        top_p)
             else:
                 # automatic background logging for non-answers
                 logger.info(f"Pre-defined answer returned: '{answer}'. Logging automatically with 'no' evaluation.")
@@ -400,8 +470,8 @@ class AppUI:
                         output_passed = "no",
                         eval_reason = "no reason given",
                         model_name = self.config.LLM_MODEL_NAME,
-                        temperature = self.config.TEMPERATURE,
-                        top_p = self.config.TOP_P
+                        temperature = temperature,   # default is: self.config.TEMPERATURE,
+                        top_p = top_p   # default is: self.config.TOP_P
                     )
                     self.db_manager.log_interaction(log_entry)
                 except ValidationError as e:
@@ -412,7 +482,7 @@ class AppUI:
                     logger.error(f"Failed to auto-log non-answer to database. Error: {e}")
                     # don't raise a gr.Error here, it's a background task
                     
-                return gr.update(value = answer), gr.update(visible = False), None, None, None
+                return gr.update(value = answer), gr.update(visible = False), None, None, None, None, None
 
         except InvalidFileTypeException as e:
             raise gr.Error(str(e))
@@ -421,12 +491,14 @@ class AppUI:
             raise gr.Error("An unexpected system error occurred. Please check the logs and try again.")
 
 
-    def _handle_evaluation(
-        self, doc_names: str,
-        prompt: str,
-        answer: str,
-        choice: Optional[str],
-        eval_reason: str
+    def _handle_evaluation(self,
+                           doc_names: str,
+                           prompt: str,
+                           answer: str,
+                           choice: Optional[str],
+                           eval_reason: str,
+                           temperature: float,
+                           top_p: float
     ) -> Tuple[Any, ...]:
         """
         Handles user's evaluation submission, logs it, and resets the UI.
@@ -450,8 +522,8 @@ class AppUI:
                 output_passed = evaluation_text,
                 eval_reason = reason_text,
                 model_name = self.config.LLM_MODEL_NAME,
-                temperature = self.config.TEMPERATURE,
-                top_p = self.config.TOP_P
+                temperature = temperature,   # defautl is: self.config.TEMPERATURE,
+                top_p = top_p                # default is: self.config.TOP_P
             )
             self.db_manager.log_interaction(log_entry)
             gr.Info("Evaluation saved! The interface has been reset for next investigation.")
@@ -467,6 +539,8 @@ class AppUI:
                 None,  # state_doc_names
                 None,  # state_last_prompt
                 None,  # state_last_answer
+                gr.update(), gr.update(),  # persist temperature and top_p state
+                gr.update(), gr.update()   # persist slider UI values
             )
         
         except ValidationError as e:
@@ -475,7 +549,8 @@ class AppUI:
             # keep panel open and state intact for user to retry
             return (gr.update(), gr.update(), gr.update(),
                     gr.update(visible = True),
-                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update())
+                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), 
+                    gr.update(), gr.update(), gr.update(), gr.update())
         
         except sqlite3.Error as e:
             logger.error(f"Failed to save evaluation to database. Error: {e}", exc_info = True)
@@ -483,4 +558,5 @@ class AppUI:
             # keep panel open and state intact for user to retry
             return (gr.update(), gr.update(), gr.update(),
                     gr.update(visible = True),
-                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update())
+                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), 
+                    gr.update(), gr.update(), gr.update(), gr.update())
