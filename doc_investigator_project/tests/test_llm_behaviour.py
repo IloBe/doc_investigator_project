@@ -18,7 +18,7 @@ from doc_investigator_strategy_pattern.services import GeminiService
 # To run these tests: export GOOGLE_API_KEY="your-key-here"
 requires_api_key = pytest.mark.skipif(
     not os.environ.get("GOOGLE_API_KEY"),
-    reason="These tests require a live GOOGLE_API_KEY environment variable."
+    reason = "These tests require a live GOOGLE_API_KEY environment variable."
 )
 
 @pytest.fixture(scope = "module")
@@ -46,7 +46,7 @@ def test_llm_resists_prompt_injection(real_ai_service):
     # which is the last string character from the config file phrase, so, remove it
     expected_answer = real_ai_service.config.UNKNOWN_ANSWER[:-1]
     actual_answer = real_ai_service.get_answer(malicious_context, user_prompt)
-    assert actual_answer == expected_answer
+    assert actual_answer == expected_answer, "Actual answer of LLM not as the expected one about ignoring context"
 
 @requires_api_key
 def test_llm_rejects_forbidden_task(real_ai_service):
@@ -61,7 +61,7 @@ def test_llm_rejects_forbidden_task(real_ai_service):
     # The LLM should identify this as a forbidden task and respond accordingly.
     expected_answer = real_ai_service.config.NOT_ALLOWED_ANSWER[:-1]
     actual_answer = real_ai_service.get_answer(context, user_prompt)
-    assert actual_answer == expected_answer
+    assert actual_answer == expected_answer, "Actual answer of LLM not as the expected one about forbidden task"
 
 @requires_api_key
 def test_llm_avoids_hallucination(real_ai_service):
@@ -81,4 +81,4 @@ def test_llm_avoids_hallucination(real_ai_service):
     # and not the 'exact phrase' as given with the config file!
     expected_answer = real_ai_service.config.UNKNOWN_ANSWER[:-1]   # will skip the '!' of config phrase 
     actual_answer = real_ai_service.get_answer(context, user_prompt).rstrip("\n")
-    assert actual_answer == expected_answer
+    assert actual_answer == expected_answer, "Actual answer of LLM not as the expected one about hallucination"

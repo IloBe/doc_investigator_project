@@ -12,8 +12,25 @@ decoupled from rest of applications business use case logic.
 import sqlite3
 from datetime import datetime
 from typing import List
-
 from loguru import logger
+from pydantic import BaseModel, Field
+
+
+class InteractionLog(BaseModel):
+    """
+    A Pydantic model representing a single user interaction record.
+    Provides data validation and a clear schema.
+    """
+    timestamp: datetime = Field(default_factory=datetime.now)
+    document_names: str
+    prompt: str
+    answer: str
+    output_passed: str
+    eval_reason: str
+    model_name: str
+    temperature: float
+    top_p: float
+
 
 class DatabaseManager:
     """
@@ -103,26 +120,13 @@ class DatabaseManager:
             logger.error(f"Could not initialize or migrate the database schema. Error: {e}", exc_info=True)
             raise
 
-    def log_interaction(self, document_names: str,
-                        prompt: str,
-                        answer: str,
-                        output_passed: str,
-                        eval_reason: str,
-                        model_name: str,
-                        temperature: float,
-                        top_p: float) -> None:
+    def log_interaction(self, interaction_log: InteractionLog) -> None:
         """
-        Logs user interaction record to SQLite database.
+        Logs a validated user interaction record to SQLite database.
 
         Args:
-            document_names (str): string containing names of uploaded docs
-            prompt (str): user's input prompt
-            answer (str): LLM's generated answer result
-            output_passed (str): user's evaluation passed decision of the answer ('yes' or 'no')
-            eval_reason (str): user's written reason for their evaluation passed decision
-            model_name (str): LLM name used for interaction
-            temperature (float): LLM temperature value
-            top_p (float): LLM top_p value
+            interaction_log (InteractionLog): Pydantic model containing all
+                                              necessary data for the log entry
 
         Raises:
             sqlite3.Error: If there is an issue with DB transaction, allows
@@ -136,18 +140,20 @@ class DatabaseManager:
                     INSERT INTO interactions (timestamp, document_names, prompt, answer, output_passed, eval_reason, model_name, temperature, top_p)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    (datetime.now().isoformat(),
-                     document_names,
-                     prompt,
-                     answer,
-                     output_passed,
-                     eval_reason,
-                     model_name,
-                     temperature,
-                     top_p)
+                    (
+                        interaction_log.timestamp.isoformat(),
+                        interaction_log.document_names,
+                        interaction_log.prompt,
+                        interaction_log.answer,
+                        interaction_log.output_passed,
+                        interaction_log.eval_reason,
+                        interaction_log.model_name,
+                        interaction_log.temperature,
+                        interaction_log.top_p,
+                    )
                 )
                 conn.commit()
-                logger.info(f"Successfully logged interaction for evaluation: '{output_passed}'.")
+                logger.info(f"Successfully logged interaction for evaluation: '{interaction_log.output_passed}'.")
         except sqlite3.Error as e:
             logger.error(f"Failed to log interaction to the database. Error: {e}", exc_info=True)
             raise # Re-raise to be handled by the caller (e.g., the UI to show an error message)
