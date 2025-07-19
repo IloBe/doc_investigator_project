@@ -27,9 +27,11 @@ from datetime import datetime
 from typing import Any, List, Optional, Tuple
 from loguru import logger
 from ydata_profiling import ProfileReport
+from pydantic import ValidationError
 
 from .documents import InvalidFileTypeException
 from . import analysis
+from .database import InteractionLog # Pydantic model
 
 # if typing, avoid circular imports at runtime
 from typing import TYPE_CHECKING
@@ -391,19 +393,25 @@ class AppUI:
                 # automatic background logging for non-answers
                 logger.info(f"Pre-defined answer returned: '{answer}'. Logging automatically with 'no' evaluation.")
                 try:
-                    self.db_manager.log_interaction(
+                    log_entry = InteractionLog(
                         document_names = doc_names,
                         prompt = prompt,
                         answer = answer,
                         output_passed = "no",
-                        eval_reason="no reason given", # Default reason
-                        model_name=self.config.LLM_MODEL_NAME,
+                        eval_reason = "no reason given",
+                        model_name = self.config.LLM_MODEL_NAME,
                         temperature = self.config.TEMPERATURE,
                         top_p = self.config.TOP_P
                     )
+                    self.db_manager.log_interaction(log_entry)
+                except ValidationError as e:
+                    # critical developer error
+                    logger.critical(f"Pydantic validation failed for auto-log. Error: {e}")
+                
                 except sqlite3.Error as e:
                     logger.error(f"Failed to auto-log non-answer to database. Error: {e}")
-                    # don't raise a gr.Error here as it's a background task
+                    # don't raise a gr.Error here, it's a background task
+                    
                 return gr.update(value = answer), gr.update(visible = False), None, None, None
 
         except InvalidFileTypeException as e:
@@ -435,16 +443,17 @@ class AppUI:
         logger.info(f"User submitted evaluation: '{evaluation_text}' with reason: '{reason_text[:50]}'. Logging to database.")
 
         try:
-            self.db_manager.log_interaction(
+            log_entry = InteractionLog(
                 document_names = doc_names,
                 prompt = prompt,
                 answer = answer,
-                output_passed=evaluation_text,
-                eval_reason=reason_text,
-                model_name=self.config.LLM_MODEL_NAME,
+                output_passed = evaluation_text,
+                eval_reason = reason_text,
+                model_name = self.config.LLM_MODEL_NAME,
                 temperature = self.config.TEMPERATURE,
                 top_p = self.config.TOP_P
             )
+            self.db_manager.log_interaction(log_entry)
             gr.Info("Evaluation saved! The interface has been reset for next investigation.")
             
             # returns tuple to reset all relevant UI items and states to initial values
@@ -459,6 +468,15 @@ class AppUI:
                 None,  # state_last_prompt
                 None,  # state_last_answer
             )
+        
+        except ValidationError as e:
+            logger.error(f"Pydantic validation failed on user evaluation. Error: {e}", exc_info=True)
+            gr.Error("Failed to save evaluation due to invalid data. Please check logs.")
+            # keep panel open and state intact for user to retry
+            return (gr.update(), gr.update(), gr.update(),
+                    gr.update(visible = True),
+                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update())
+        
         except sqlite3.Error as e:
             logger.error(f"Failed to save evaluation to database. Error: {e}", exc_info = True)
             gr.Error("Failed to save evaluation due to a database error. Please try again.")

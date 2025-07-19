@@ -45,7 +45,7 @@ def test_generate_profile_report_success(mock_read_csv, mock_profile_report_clas
     Test Case: Successful report generation.
     Checks if pandas and ProfileReport are called correctly and the profile object is returned.
     """
-    # Arrange:
+    # Arrange
     # config: mock DataFrame that pandas will "return"
     mock_df = pd.DataFrame({'col1': [1, 2]})
     mock_read_csv.return_value = mock_df
@@ -53,10 +53,10 @@ def test_generate_profile_report_success(mock_read_csv, mock_profile_report_clas
     mock_profile_instance = MagicMock()
     mock_profile_report_class.return_value = mock_profile_instance
 
-    # Act:
+    # Act
     result = analysis.generate_profile_report(mock_valid_csv)
 
-    # Assert:
+    # Assert
     # verify that pandas was called reading CSV file
     mock_read_csv.assert_called_once_with(mock_valid_csv)
     # verify that ProfileReport class was initialized with mock DataFrame
@@ -74,15 +74,15 @@ def test_generate_profile_report_file_not_found(caplog):
     handler_id = logger.add(caplog.handler, format="{message}")
     
     try:
-        # Arrange:
+        # Arrange
         non_existent_path = "path/to/non_existent_file.csv"
 
-        # Act:
+        # Act
         result = analysis.generate_profile_report(non_existent_path)
 
-        # Assert:
-        assert result is None
-        assert "file does not exist" in caplog.text
+        # Assert
+        assert result is None, ".csv file has been found"
+        assert "file does not exist" in caplog.text, "FileNotFound exception message not as expected"
     finally:
         logger.remove(handler_id)
 
@@ -96,16 +96,16 @@ def test_generate_profile_report_empty_file(mock_read_csv, mock_empty_csv, caplo
     handler_id = logger.add(caplog.handler, format="{message}")
     
     try:
-        # Arrange:
+        # Arrange
         # config: pandas returns an empty DataFrame
         mock_read_csv.return_value = pd.DataFrame()
 
-        # Act:
+        # Act
         result = analysis.generate_profile_report(mock_empty_csv)
 
-        # Assert:
-        assert result is None
-        assert "is empty" in caplog.text
+        # Assert
+        assert result is None, "The .csv file is not empty and a dataframe is created"
+        assert "is empty" in caplog.text, "Empty dataframe exception message not as expected"
     finally:
         logger.remove(handler_id)
 
@@ -121,15 +121,15 @@ def test_generate_profile_report_unexpected_exception(mock_read_csv, mock_profil
     handler_id = logger.add(caplog.handler, format="{message}")
     
     try:
-        # Arrange:
+        # Arrange
         mock_read_csv.return_value = pd.DataFrame({'col1': [1, 2]})
 
-        # Act:
+        # Act
         result = analysis.generate_profile_report(mock_valid_csv)
 
-        # Assert:
+        # Assert
         assert result is None
-        assert "unexpected error" in caplog.text.lower()
-        assert "Profiling Failed" in caplog.text
+        assert "unexpected error" in caplog.text.lower(), "Unexpected error message of profiling lib exception not as expected"
+        assert "Profiling Failed" in caplog.text, "Profiling failure message not as expected"
     finally:
         logger.remove(handler_id)

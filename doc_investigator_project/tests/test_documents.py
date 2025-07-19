@@ -54,16 +54,20 @@ def test_validate_files_failure(doc_processor, mock_gradio_file):
 
 def test_process_single_txt_file(doc_processor, mock_gradio_file):
     """Tests text extraction from a single .txt file."""
+    # Arrange
     file_content = "This is a test text file."
     files = [mock_gradio_file("test.txt", content = file_content)]
     
+    # Act
     result = doc_processor.process_files(files)
     
-    assert file_content in result
-    assert "--- CONTENT FROM test.txt ---" in result
+    # Assert
+    assert file_content in result, "Primary file content not as expected in text result"
+    assert "--- CONTENT FROM test.txt ---" in result, "Final file content text line not in text result"
     
 def test_process_multiple_files(doc_processor, mock_gradio_file):
     """Tests text extraction from multiple files, ensuring content is combined."""
+    # Arrange
     content1 = "Content from file one."
     content2 = "Content from file two."
     files = [
@@ -71,22 +75,27 @@ def test_process_multiple_files(doc_processor, mock_gradio_file):
         mock_gradio_file("two.txt", content=content2)
     ]
 
+    # Act
     result = doc_processor.process_files(files)
 
-    assert content1 in result
-    assert content2 in result
-    assert "--- CONTENT FROM one.txt ---" in result
-    assert "--- CONTENT FROM two.txt ---" in result
-    assert result.count("\n\n") >= 1       
+    # Assert
+    assert content1 in result, "Content 1 not in combined text result"
+    assert content2 in result, "Content 2 not in combined text result"
+    assert "--- CONTENT FROM one.txt ---" in result, "Final file content 1 text line not in combined text result"
+    assert "--- CONTENT FROM two.txt ---" in result, "Final file content 2 text line not in combined text result"
+    assert result.count("\n\n") >= 1, "Page breaks not as expected in combined text result"      
 
 def test_loader_strategy_for_nonexistent_file(doc_processor, tmp_path):
     """Tests that loaders handle non-existent files gracefully."""
     # Note: testing this through main processor
+    # Arrange
     class MockNonExistentFile:
         name = str(tmp_path / "nonexistent.txt")
     
+    # Act
     files = [MockNonExistentFile()]
     
+    # Assert
     # expect an error message inside the content, not an exception
     result = doc_processor.process_files(files)
-    assert "[Error processing TXT: nonexistent.txt]" in result
+    assert "[Error processing TXT: nonexistent.txt]" in result, "Error message of non existing file not as expected"
