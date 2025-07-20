@@ -45,7 +45,7 @@ ValueError: This function is not callable because it is either stateful or is a 
 Therefore, Gradio's approach of app.launch() method is used instead.
 
 ## Testing: Classical Software
-Regarding classical software testing, the following 3 files with <i>Pytest</i> unit test cases are delivered, to make sure refactoring or the implementation of new features will not brack the application workflow.<br>
+Regarding classical software testing, the following files with <i>Pytest</i> unit test cases are delivered, to make sure refactoring or the implementation of new features will not brack the application workflow.<br>
 
 **Important for pytest run:**
 Beside the unit tests, outside the tests directory, if a Gradio server process is started and still running: As a symptom, the pytest run will stopp after having collected all test items. Then, we have to trigger the remaining pytest run manually by stopping such server, e.g. via ctrl+c on the pytest terminal. Afterwards everything works as expected, means the pytest run finish with its result information.
@@ -67,7 +67,7 @@ We use the <i>tmp_path fixture</i> to create temporary dummy files for testing t
 These tests are designed to run in an async context to mimic the Gradio environment.
 
 ### test_analysis.py
-Tests to cover the behaviour of the data analysis profiling part of creating and exporting an y-data report.
+Tests to cover the behaviour of the data analysis profiling part of creating and exporting an y-data report. File handling and data validation are taken into account.
 
 ### pyproject.toml
 Explanations of the pytest configuration:
