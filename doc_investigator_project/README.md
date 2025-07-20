@@ -66,6 +66,9 @@ We use the <i>tmp_path fixture</i> to create temporary dummy files for testing t
 ### test_app.py
 These tests are designed to run in an async context to mimic the Gradio environment.
 
+### test_analysis.py
+Tests to cover the behaviour of the data analysis profiling part of creating and exporting an y-data report.
+
 ### pyproject.toml
 Explanations of the pytest configuration:
 
@@ -126,28 +129,28 @@ Some industry-standard resources about generative AI are:
 
 - **Gemini 2.5 Pro Technical Report**: The primary source for performance metrics, safety evaluations, and model capabilities. This is essential reading.
 
-            Link: https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf
+            https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf
 
     Google AI for Developers: Google's official portal with documentation, examples, and links to model information in the "Model Garden."
 
-            Link: https://ai.google.dev/
+            https://ai.google.dev/
 
 ### AI Security Frameworks
 
 - **OWASP Top 10 for Large Language Model Applications**: This is the most important security resource. It lists the ten most critical security risks for LLM applications, including Prompt Injection, Insecure Output Handling, and Model Denial of Service. Our security improvements were based on these principles.
 
-            Link: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+            https://owasp.org/www-project-top-10-for-large-language-model-applications/
 
 - **MITRE ATLAS™ (Adversarial Threat Landscape for Artificial-Intelligence Systems)**: A knowledge base of adversarial tactics and techniques against AI systems, modeled after the famous ATT&CK framework. It's excellent for understanding the threat landscape.
 
-            Link: https://atlas.mitre.org/
+            https://atlas.mitre.org/
 
 ### Third-Party Benchmarks and Leaderboards
 
 - **Hugging Face Open LLM Leaderboard**: A well-respected leaderboard that evaluates and ranks open-source LLMs on key benchmarks. While it doesn't include closed models like Gemini, it's a great reference for the state of the art.
 
-            Link: https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard
+            https://huggingface.co/spaces/HuggingFaceH4/open_llm_leaderboard
 
 - **LMSys Chatbot Arena**: A unique crowdsourced benchmark where humans vote on anonymous side-by-side comparisons of different models, including GPT-4, Claude, and Gemini. A possiblity to democratize AI benchmarking and establish trusted norms for evaluating LLMs.
 
-            Link: https://chat.lmsys.org/?arena
+            https://chat.lmsys.org/?arena
