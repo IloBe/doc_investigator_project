@@ -1,0 +1,26 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  # Export to Jaeger
+  jaeger:
+    endpoint: jaeger:14268
+    tls:
+      insecure: true
+  
+  # (Optional) Also log traces to the collector's console for debugging
+  logging:
+    loglevel: debug
+
+processors:
+  batch:
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [jaeger, logging]

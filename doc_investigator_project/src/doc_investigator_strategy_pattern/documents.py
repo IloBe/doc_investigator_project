@@ -13,6 +13,9 @@ Classes:
     - DocumentProcessor: Context class that uses a strategy to process files
 """
 
+# ----------
+# Imports
+# ----------
 import abc
 import os
 from typing import Any, Dict, List
@@ -21,6 +24,10 @@ import docx
 import fitz  # PyMuPDF
 import openpyxl
 from loguru import logger
+
+# ----------
+# Coding
+# ----------
 
 # --- Custom Exception ---
 class InvalidFileTypeException(Exception):

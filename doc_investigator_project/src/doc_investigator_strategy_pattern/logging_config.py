@@ -8,6 +8,9 @@ output and file-based logging. It establishes a standardized, structured
 log format to ensure consistency and readability across the entire application.
 """
 
+# ----------
+# Imports
+# ----------
 import os
 import sys
 from pathlib import Path
@@ -15,6 +18,10 @@ from typing import NoReturn
 from loguru import logger
 
 from .config import Config
+
+# ----------
+# Coding
+# ----------
 
 def setup_logging(config: Config) -> None:
     """
@@ -63,10 +70,15 @@ def setup_logging(config: Config) -> None:
         pass
     
     # --- loguru configuration ---
+    #log_format = (
+    #    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
+    #    "<level>{level: <8}</level> | "
+    #    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+    #)
     log_format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
-        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
+        "<cyan>{name}:{function}:{line}</cyan> - <level>{message}</level>"
     )
 
     # remove default handler to avoid duplicate outputs
@@ -114,7 +126,6 @@ def unexpected_shutdown_handler(exc_type, exc_value, exc_traceback) -> NoReturn:
 
     logger.critical("An uncaught exception occurred. Application will now shut down.",
                     exc_info=(exc_type, exc_value, exc_traceback))
-
 
 # Set the custom exception hook
 sys.excepthook = unexpected_shutdown_handler

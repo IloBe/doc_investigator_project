@@ -12,37 +12,12 @@ Some engineering quality aspects have been taken into account, even the coding d
 Regarding the implementation process:<br>
 Starting point has been the implementation of a PoC Python 3.10.9 script. The transition from **PoC to MVP** is summarized: The entire user journey, from document upload and validation to AI investigation, automatic logging, user evaluation, and a full UI reset, is implemented with some specific requirements.
 
-## Gradio and Uvicorn
-Working with Gradio, it is not possible to use a direct Uvicorn server run with the associated parameters in main(). Means something like:
-```
-    uvicorn.run(
-        "main:app",
-        host = "0.0.0.0",
-        port = 8000,
-        reload = True,
-        log_level = "info"
-    )
-```
+## Gradio and Burr
+Working with Gradio alone doesn't separate the business workflows and the UI, so, Burr is used to do just this. Its state machine concept makes debugging and testing much easier.
 
-### Explanations
-First: Information about Uvicorn command parameters
-
-- uvicorn: command to run the ASGI server
-- main:app: tells Uvicorn: "Look inside file main.py, find global variable named app." The main.py file creates this app object
--    --host 0.0.0.0: listens on all network interfaces (essential for WSL)
--    --port 8000:  serverport,  standard Gradio port is 7860
--    --reload: development feature, Uvicorn restarts automatically whenever you save a change to any of the Python files
-
-Second: Information about Gradio and Uvicorn app launch handling
-
-- **Uvicorn's Expectation** by using <i>uvicorn.run("main:app", reload=True)</i> is <i>main:app</i> to be a standard ASGI application. An ASGI application is a callable object (like a function) that Uvicorn can execute to handle web requests. When its reloader starts a new process, it imports <i>main.py</i>, finds the app object and tries to call it like this: <i>app()</i>.
-
-- Regarding **Gradio's Design**: A Gradio <i>gr.Blocks</i> object (which is our app variable) is not a simple ASGI callable. It's a complex, stateful object that builds a UI, manages its own state, and has its own built-in web server logic.
-
-So, a conflict appears by using <i>uvicorn.run()</i> directly and a CLI stacktrace informs about it:<br>
-ValueError: This function is not callable because it is either stateful or is a generator. Please use the .launch() method instead...
-
-Therefore, Gradio's approach of app.launch() method is used instead.
+The implemented business workflow including the main components is visualised in the following diagram:
+![application workflow overview](../assets/doc_invest_workflow_diagram.png)
+<br>
 
 ## Testing: Classical Software
 Regarding classical software testing, the following files with <i>Pytest</i> unit test cases are delivered, to make sure refactoring or the implementation of new features will not brack the application workflow.<br>
@@ -51,11 +26,9 @@ Regarding classical software testing, the following files with <i>Pytest</i> uni
 Beside the unit tests, outside the tests directory, if a Gradio server process is started and still running: As a symptom, the pytest run will stopp after having collected all test items. Then, we have to trigger the remaining pytest run manually by stopping such server, e.g. via ctrl+c on the pytest terminal. Afterwards everything works as expected, means the pytest run finish with its result information.
 
 Note:<br>
-The test configuration settings are delivered with the <i>pyproject.toml</i> file. Nevertheless, regarding filter warnings there is an issue by using <i>Gradio</i> and <i>Uvicorn</i> which is handled by an additional **conftest.py** file, stored in the tests directory.
-This handles the third-party import warnings now, not seeing them anymore on pytest call terminal.
+The test configuration settings are delivered with the <i>pyproject.toml</i> file. 
 
-Symptom is:<br>
-Some warnings you are seeing as a result of a pytest run are generated very early in the test process, means during the import of third-party libraries like Gradio and Uvicorn. It is a known, difficult issue where pytest's configuration from pyproject.toml is sometimes not fully loaded and applied before these initial imports happen, rendering the filterwarnings directive ineffectively.
+Some warnings you are seeing as a result of a pytest run are generated very early in the test process, means during the import of third-party libraries like Gradio. It is a known, difficult issue where pytest's configuration from pyproject.toml is sometimes not fully loaded and applied before these initial imports happen, rendering the filterwarnings directive ineffectively.
 
 ### test_database.py
 We use pytest's built-in <i>tmp_path fixture</i> to create a temporary database file for each test, ensuring that our tests are completely isolated and don't affect the real production database.

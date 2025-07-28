@@ -4,11 +4,18 @@
 Unit tests for the DatabaseManager class.
 """
 
+# ----------
+# Imports
+# ----------
 import sqlite3
 import pytest
 import sys
 
 from doc_investigator_strategy_pattern.database import DatabaseManager, InteractionLog
+
+# ----------
+# Coding
+# ----------
 
 # Pytest fixture to create a fresh DatabaseManager instance for each test function
 # using a temporary database file.

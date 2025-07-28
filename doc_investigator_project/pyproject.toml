@@ -28,5 +28,5 @@ addopts = [
     "--strict-markers",        # Fail the test suite if an unregistered marker is used.
     "--color=yes",             # Ensure terminal output is colorized for readability.
     "--cov=src/doc_investigator_strategy_pattern",  # Correct path for coverage.
-    "--cov-report=term-missing",   # Show a coverage report in the terminal.
-    
+    "--cov-report=term-missing"   # Show a coverage report in the terminal.
+]

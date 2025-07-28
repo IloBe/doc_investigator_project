@@ -8,11 +8,18 @@ They require a valid GOOGLE_API_KEY to be set in the environment.
 They will be slower and may incur costs.
 """
 
+# ----------
+# Imports
+# ----------
 import os
 import pytest
 
 from doc_investigator_strategy_pattern.config import Config
 from doc_investigator_strategy_pattern.services import GeminiService
+
+# ----------
+# Coding
+# ----------
 
 # Pytest marker to skip these tests if the API key is not available.
 # To run these tests: export GOOGLE_API_KEY="your-key-here"

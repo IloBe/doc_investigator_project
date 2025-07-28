@@ -3,8 +3,13 @@
 """
 Unit tests for the AppUI class, focusing on event handler logic.
 These tests are designed to run partly in async context to mimic the Gradio environment.
+These tests mock the Burr application to ensure the UI layer
+interacts with the state machine correctly.
 """
 
+# ----------
+# Imports
+# ----------
 import pytest
 import gradio as gr
 import sys
@@ -14,144 +19,172 @@ from doc_investigator_strategy_pattern.app import AppUI
 from doc_investigator_strategy_pattern.documents import InvalidFileTypeException
 from doc_investigator_strategy_pattern.database import InteractionLog
 
+# ----------
+# Coding
+# ----------
+
 # get rid off warning filter to suppress DeprecationWarning from Gradio
 pytestmark = [
-    pytest.mark.filterwarnings("ignore:There is no current event loop:DeprecationWarning:gradio.utils")
+    pytest.mark.filterwarnings(
+        "ignore:There is no current event loop:DeprecationWarning:gradio.utils"
+    )
 ]
 
 @pytest.fixture
-def mock_services():
+def mock_dependencies():
     """Provides a dictionary of mock services. Remains a synchronous fixture."""
     config_mock = MagicMock()
     config_mock.LLM_MODEL_NAME = "mock-model-name"
-    # default values for reset button test
+    # default values of LLM params for reset button test
     config_mock.TEMPERATURE = 0.2
     config_mock.TOP_P = 0.95
     return {
         "config": config_mock,
         "db_manager": MagicMock(),
         "doc_processor": MagicMock(),
-        "ai_service": MagicMock()
+        "ai_service": MagicMock(),
     }
 
 @pytest.fixture
-def app_ui(mock_services):
+def app_ui(mock_dependencies):
     """Provides an AppUI instance with all backend services mocked."""
-    return AppUI(**mock_services)
+    return AppUI(**mock_dependencies)
 
+# --- 
+# Tests of 'Investigation' tab (Burr-related)
+# ---
+
+# patch `build_application` here to control Burr app instance on demand
+# in UI tests without calling real state machine logic
+@patch('doc_investigator_strategy_pattern.app.build_application')
 @pytest.mark.asyncio
-async def test_handle_investigation_success(app_ui, mock_services):
+async def test_handle_investigation_success(mock_build_application, app_ui):
     """
-    Tests the main investigation workflow on a successful path.
+    Tests the main investigation handler, ensuring it calls Burr and updates the UI correctly.
     """
     # Arrange
+    mock_burr_app = MagicMock()
+    mock_build_application.return_value = mock_burr_app
+
+    # to avoid ValueError - not enough values to unpack:
+    # configure mock's `run` method to return 3-tuple like real method,
+    # contents don't matter...
+    mock_burr_app.run.return_value = (MagicMock(), MagicMock(), MagicMock())
+    
     mock_files = [MagicMock()]
     mock_prompt = "test prompt"
-    mock_answer = "This is a real answer."
     temperature_from_ui = 0.75
     top_p_from_ui = 0.85
-    mock_services["doc_processor"].process_files.return_value = "Extracted text"
-    mock_services["ai_service"].get_answer.return_value = mock_answer
-    mock_services["config"].LLM_MODEL_NAME = "mock-model-name"
-    mock_services["config"].UNKNOWN_ANSWER = "Unknown"
-    mock_services["config"].NOT_ALLOWED_ANSWER = "Not Allowed"
-    mock_services["config"].MAX_CONTEXT_CHARACTERS = 800000
 
-    # Act: Although the handler itself is synchronous, call it from an async
-    # test function being a simulation of the Gradio runtime
+    # UI handler reads burr app's internal state
+    mock_burr_app.state = {
+        "llm_answer": "This is a real answer.",
+        "is_real_answer": True,
+        "doc_names": "doc1.pdf",
+        "prompt": mock_prompt,
+        "error_message": None
+    }
+
+    # Act
     (answer_update, panel_update,
-     _, _, _,
+     doc_names_out, prompt_out, answer_out,
      temp_state_out, top_p_state_out) = app_ui._handle_investigation(
         mock_files, mock_prompt, temperature_from_ui, top_p_from_ui
-    )  
+    )
 
     # Assert
-    # service called with dynamic param values
-    mock_services["doc_processor"].validate_files.assert_called_once_with(mock_files)
-    mock_services["doc_processor"].process_files.assert_called_once_with(mock_files)
-    mock_services["ai_service"].get_answer.assert_called_once_with(
-        "Extracted text", mock_prompt, temperature_from_ui, top_p_from_ui
+    # verify burr_app correctly build and run
+    mock_build_application.assert_called_once_with(
+        config = app_ui.config,
+        db_manager = app_ui.db_manager,
+        doc_processor = app_ui.doc_processor,
+        ai_service = app_ui.ai_service
     )
-    assert answer_update['value'] == mock_answer, "Extracted investigation text and ai service not as expected"
+    mock_burr_app.run.assert_called_once()
+    call_inputs = mock_burr_app.run.call_args.kwargs['inputs']
+    assert call_inputs['prompt'] == mock_prompt
+    assert call_inputs['llm_params']['temperature'] == temperature_from_ui
+    
+    # verify UI components updated correctly based on mocked state
+    assert answer_update['value'] == "This is a real answer.", "Extracted investigation text and ai service not as expected"
     assert panel_update['visible'] is True, "Investigation panel is not updated resp. its not visible"
+    assert doc_names_out == "doc1.pdf", "Document name not as expected"
+    assert prompt_out == mock_prompt, "LLM output prompt txt not as expected"
+    assert answer_out == "This is a real answer.", "LLM output state result not as expected"
     assert temp_state_out == temperature_from_ui, "Wrong temperature value returned for state storage"
     assert top_p_state_out == top_p_from_ui, "Wrong top-p value returned for state storage"
-    mock_services["db_manager"].log_interaction.assert_not_called()
 
-@pytest.mark.asyncio    
-async def test_handle_investigation_unknown_answer_logs_correctly(app_ui, mock_services):
+
+@patch('doc_investigator_strategy_pattern.app.build_application')
+@pytest.mark.asyncio
+async def test_handle_investigation_auto_logged(mock_build_application, app_ui):
     """
-    Tests that a non-answer is auto-logged with the new, correct schema.
+    Tests the handler when Burr returns a non-answer that was auto-logged.
     """
     # Arrange
-    mock_files = [MagicMock(name="test.pdf")]
-    mock_prompt = "test prompt"
-    unknown_answer = "Your request is unknown..."
-    mock_services["doc_processor"].process_files.return_value = "Some text from a document."
-    mock_services["ai_service"].get_answer.return_value = unknown_answer
-    mock_services["config"].LLM_MODEL_NAME = "mock-model-name"
-    mock_services["config"].UNKNOWN_ANSWER = unknown_answer
-    mock_services["config"].NOT_ALLOWED_ANSWER = "Not Allowed"
-    mock_services["config"].MAX_CONTEXT_CHARACTERS = 800000
-    temperature_from_ui = 0.5
-    top_p_from_ui = 0.5
+    mock_burr_app = MagicMock()
+    mock_build_application.return_value = mock_burr_app
+
+    # to avoid ValueError - not enough values to unpack:
+    # configure mock's `run` method to return 3-tuple like real method,
+    # contents don't matter...
+    mock_burr_app.run.return_value = (MagicMock(), MagicMock(), MagicMock())
     
+    mock_burr_app.state = {
+        "llm_answer": "Unknown",
+        "is_real_answer": False,
+        "error_message": None
+    }
+
     # Act
-    (answer_update, panel_update, doc_names_out,
-     prompt_out, answer_out, temp_out, top_p_out) = app_ui._handle_investigation(
-        mock_files, mock_prompt, temperature_from_ui, top_p_from_ui
+    (answer_update, panel_update, *other_states) = app_ui._handle_investigation(
+        [MagicMock()], "prompt", 0.5, 0.5
     )
 
     # Assert
-    assert panel_update['visible'] is False, "Investigation panel is updated"
-    
-    db_mock = mock_services["db_manager"]
-    db_mock.log_interaction.assert_called_once() 
-    
-    # check the Pydantic object
-    logged_object = db_mock.log_interaction.call_args.args[0]
-    assert isinstance(logged_object, InteractionLog), "Instance is not an object of Pydantic InteractionLog"
-    assert logged_object.output_passed == 'no', "User decision about output passed is not 'no'"
-    assert logged_object.prompt == mock_prompt, "User prompt input is not as expected"
-    assert logged_object.eval_reason == "no reason given", "Free user evaluation reason text is given, but shall not"
-    assert logged_object.model_name == "mock-model-name", "LLM model name not as expected"
-    assert logged_object.temperature == temperature_from_ui, "temperature is not as in UI"
-    assert logged_object.top_p == top_p_from_ui, "top-p is not as in UI"
+    assert answer_update['value'] == "Unknown", "Default answer for unknown is not there"
+    assert panel_update['visible'] is False, "Evaluation analysis panel should be hidden"
+    assert all(s is None for s in other_states), "Not all state variables are correctly reset to None"
 
-
+    
 @pytest.mark.asyncio
-async def test_handle_evaluation_persists_slider_values(app_ui, mock_services):
+async def test_handle_evaluation_calls_burr_step(app_ui, mock_dependencies):
     """
-    Tests that the evaluation handler persist the last used slider values,
-    not reset them.
+    Tests that the evaluation handler calls burr_app.step() correctly.
     """
     # Arrange
-    choice = "✔️ Yes, the answer is helpful and accurate."
+    choice = "✔️ Yes..."
     reason = "A valid reason."
-    # The values that were used for the query, passed from state
-    last_used_temp = 0.55
-    last_used_top_p = 0.65
-
+    # place a mock Burr app into AppUI instance to simulate
+    # state after an investigation has been run and halted
+    app_ui.burr_app = MagicMock()
+    
     # Act
     result_tuple = app_ui._handle_evaluation(
-        "doc.txt", "prompt", "answer", choice, reason, last_used_temp, last_used_top_p
+        "doc.txt", "prompt", "answer", choice, reason, 0.5, 0.5
     )
-
-    # Assert
-    # return tuple has 13 elements: last two are the sliders
-    assert len(result_tuple) == 13, "return tuple does not include 13 elements"
     
-    # checks that slider outputs are no-op updates
-    temp_slider_update = result_tuple[-2]
-    top_p_slider_update = result_tuple[-1]
-    assert temp_slider_update == gr.update(), "temperature slider is no no-op update"
-    assert top_p_slider_update == gr.update(), "top-p slider is no no-op update"
+    # Assert
+    assert app_ui.burr_app.step.call_count == 2, "App code hasn't called step() twice, as it is expected"
+    
+    # inspect first call ensures inputs were correct
+    first_call_inputs = app_ui.burr_app.step.call_args_list[0].kwargs['inputs']
+    assert first_call_inputs['evaluation_choice'] == choice, "Evaluation choice buttons are not set"
+    assert first_call_inputs['evaluation_reason'] == reason , "Evaluation reason txt window component not there"
+    
+    # UI reset
+    assert result_tuple[0] is None, "file_uploader window component is not cleared"
+    assert result_tuple[1] == "", "User prompt_input window component is not cleared"
+    assert result_tuple[3]['visible'] is False, "Evaluation analysis panel 'evaluation_panel' is not hidden"
+    
+    # sliders receive a "no-op" update
+    UpdateObjectType = type(gr.update())
+    assert isinstance(result_tuple[9], UpdateObjectType), "temperature slider reset not updated correctly, no-op"
+    assert isinstance(result_tuple[10], UpdateObjectType), "top-p slider reset not updated correctly, no-op"
 
-    # state itself is persisted
-    temp_state_update = result_tuple[-4]
-    top_p_state_update = result_tuple[-3]
-    assert temp_state_update == gr.update(), "Wrong state of temperature"
-    assert top_p_state_update == gr.update(), "Wrong state of top-p"
+# ---
+# Tests of 'Evaluation Analysis' tab (not Burr related)
+# ---
     
 def test_reset_llm_button_functionality(app_ui):
     """
@@ -167,18 +200,18 @@ def test_reset_llm_button_functionality(app_ui):
     temp_output, top_p_output = reset_function()
 
     # Assert
-    # outputs match default values set in mock_services fixture
+    # outputs match default values set in mock_dependencies fixture
     assert temp_output == 0.2, "temperature output doesn't match default 0.2"
     assert top_p_output == 0.95, "top-p output doesn't match default 0.95"
     
 @pytest.mark.asyncio
-async def test_handle_file_validation_failure(app_ui, mock_services):
+async def test_handle_file_validation_failure(app_ui, mock_dependencies):
     """
     Tests that the file validation handler catches an exception and returns None.
     """
     # Arrange
     mock_files = [MagicMock()]
-    mock_services["doc_processor"].validate_files.side_effect = InvalidFileTypeException("Bad file")
+    mock_dependencies["doc_processor"].validate_files.side_effect = InvalidFileTypeException("Bad file")
     
     # Act
     # We patch 'gradio.Warning' to prevent it from trying to render in a non-UI context
@@ -189,58 +222,6 @@ async def test_handle_file_validation_failure(app_ui, mock_services):
     assert result is None, "The handler should return None to clear the Gradio component."
     mock_gr_warning.assert_called_once(), "gr.Warning should have been called to inform the user."
 
-@pytest.mark.asyncio
-async def test_handle_evaluation_success_with_reason(app_ui, mock_services):
-    """Tests the evaluation handler for a successful submission."""
-    # Arrange
-    choice = "✔️ Yes, the answer is helpful and accurate."
-    reason = "This is a detailed reason."
-    mock_services["config"].LLM_MODEL_NAME = "mock-model-name"
-    temp_from_state = 0.8
-    top_p_from_state = 0.9
-
-    # Act
-    app_ui._handle_evaluation(
-        "doc.txt", "prompt", "answer", choice, reason, temp_from_state, top_p_from_state
-    )
-
-    # Assert
-    db_mock = mock_services["db_manager"]
-    db_mock.log_interaction.assert_called_once()
-    logged_object = db_mock.log_interaction.call_args.args[0]
-    assert isinstance(logged_object, InteractionLog), "logged object is no InteractionLog instance"
-    assert logged_object.output_passed == 'yes', "User decision about output passed is not 'yes'"
-    assert logged_object.eval_reason == reason, "Free user evaluation reason text is not as expected"
-    assert logged_object.document_names == 'doc.txt', "Document name is not 'doc.txt'"
-    assert logged_object.model_name == 'mock-model-name', "LLM model name not as expected"
-    assert logged_object.temperature == temp_from_state, "temperature value not as state"
-    assert logged_object.top_p == top_p_from_state, "top-p value not as state"
-
-@pytest.mark.asyncio
-async def test_handle_evaluation_success_with_no_reason(app_ui, mock_services):
-    """Tests the evaluation handler logs correctly when no reason is provided."""
-    # Arrange
-    choice = "❌ No, the answer is not helpful or inaccurate."
-    reason = "   " # Test with empty space to ensure stripping works
-    mock_services["config"].NO_REASON_GIVEN = "no reason given"
-    mock_services["config"].LLM_MODEL_NAME = "mock-model-name"
-    temp_from_state = 0.1
-    top_p_from_state = 0.2
-
-    # Act
-    app_ui._handle_evaluation(
-        "doc.txt", "prompt", "answer", choice, reason, temp_from_state, top_p_from_state
-    )
-
-    # Assert
-    db_mock = mock_services["db_manager"]
-    db_mock.log_interaction.assert_called_once()
-    logged_object = db_mock.log_interaction.call_args.args[0]
-    assert isinstance(logged_object, InteractionLog), "logged object is no InteractionLog instance"
-    assert logged_object.output_passed == 'no', "User decision about output passed is not 'no'"
-    assert logged_object.eval_reason == 'no reason given', "Free user evaluation reason text is given, but shall not"
-    assert logged_object.temperature == temp_from_state, "temperature value not as state"
-    assert logged_object.top_p == top_p_from_state, "top-p value not as state"
 
 @patch('doc_investigator_strategy_pattern.app.analysis.generate_profile_report')
 def test_handle_profile_generation_success(mock_generate_report, app_ui):

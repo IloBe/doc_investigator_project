@@ -7,17 +7,25 @@ Defines the AppUI class, which constructs the user interface using the
 Gradio library. It manages UI components, state and event handling. It
 acts as the central controller that connects user actions to the
 backend services (document processing, AI and database).
+
+It creates a new Burr instance for each investigation to ensure no state leaks,
+while correctly preserving the UI slider state after an evaluation.
 """
 
-# --- FIX: Suppress noisy dependency warnings at the very start ---
+# ----------
+# Imports
+# ----------
+
+# --- Suppress noisy dependency warnings at the very start ---
 # handle warnings from third-party libs that are not critical for app's function,
-# appears with old WSL ubuntu version 20.04 on Windows 10 and Python 3.10 version, see:
+# appears with WSL ubuntu version 20.04 and Python 3.10, see:
 # https://github.com/numpy/numpy/issues/22187
 import warnings
 warnings.filterwarnings(
     "ignore",
-    message="Signature b'\\x00\\xd0\\xcc\\xcc\\xcc\\xcc\\xcc\\xcc\\xfb\\xbf\\x00\\x00\\x00\\x00\\x00\\x00' for <class 'numpy.longdouble'> does not match any known type")
-warnings.filterwarnings("ignore", message="Upgrade to ydata-sdk")
+    message = "Signature b'\\x00\\xd0\\xcc\\xcc\\xcc\\xcc\\xcc\\xcc\\xfb\\xbf\\x00\\x00\\x00\\x00\\x00\\x00' for <class 'numpy.longdouble'> does not match any known type"
+)
+warnings.filterwarnings("ignore", message = "Upgrade to ydata-sdk*")
 # ---
 
 import gradio as gr
@@ -28,10 +36,14 @@ from typing import Any, List, Optional, Tuple
 from loguru import logger
 from ydata_profiling import ProfileReport
 from pydantic import ValidationError
+from burr.core import Application
 
 from .documents import InvalidFileTypeException
-from . import analysis
 from .database import InteractionLog # Pydantic model
+from . import analysis
+
+# factory for burr instances
+from .state_machine import build_application
 
 # if typing, avoid circular imports at runtime
 from typing import TYPE_CHECKING
@@ -40,6 +52,11 @@ if TYPE_CHECKING:
     from .database import DatabaseManager
     from .documents import DocumentProcessor
     from .services import GeminiService
+    from .state_machine import InvestigationState
+
+# ----------
+# Coding
+# ----------
 
 class AppUI:
     """
@@ -53,7 +70,7 @@ class AppUI:
         config: 'Config',
         db_manager: 'DatabaseManager',
         doc_processor: 'DocumentProcessor',
-        ai_service: 'GeminiService'
+        ai_service: 'GeminiService',
     ):
         """
         Initializes the AppUI class.
@@ -68,7 +85,7 @@ class AppUI:
         self.db_manager = db_manager
         self.doc_processor = doc_processor
         self.ai_service = ai_service
-
+        self.burr_app: Optional[Application] = None
         # `_build_ui` method returns Gradio app object, stored here
         self.app: gr.Blocks = self._build_ui()
 
@@ -93,9 +110,9 @@ class AppUI:
             input_background_fill = "#F7F7F7",
         )
         
-        with gr.Blocks(theme=theme,
-                       title="Document Investigator",
-                      ) as app:
+        with gr.Blocks(theme = theme,
+                       title = "Document Investigator",
+             ) as app:
             
             # --- State Management ---
             state_doc_names = gr.State(None)
@@ -142,7 +159,7 @@ class AppUI:
         # first row at the top
         with gr.Row():
             # left side for workflow description
-            with gr.Column(scale=2):  # larger horizontal space
+            with gr.Column(scale = 2):  # larger horizontal space
                 gr.Markdown(
                     """
                     ### How to use this tool:
@@ -159,7 +176,7 @@ class AppUI:
                     """
                 )
             # right side for LLM settings    
-            with gr.Column(scale=1): 
+            with gr.Column(scale = 1): 
                 with gr.Accordion(f"LLM Settings ({self.config.LLM_MODEL_NAME})", open=False):
                     temperature_slider = gr.Slider(
                         minimum = 0.0,
@@ -175,14 +192,14 @@ class AppUI:
                         label = "Top-P",
                         value = self.config.TOP_P
                     )
-                    reset_llm_button = gr.Button("Reset to Defaults", variant="secondary")
+                    reset_llm_button = gr.Button("Reset to Defaults", variant = "secondary")
         
         gr.Markdown("---") # Visual separator
                 
         # second row for core business workflow
         with gr.Row():
             # left column for user inputs
-            with gr.Column(scale=1):        
+            with gr.Column(scale = 1):        
                 file_uploader = gr.File(
                     label = "Step 1: Upload Your Documents",
                     file_count = "multiple",
@@ -196,10 +213,10 @@ class AppUI:
                     lines = 4,
                     placeholder = "e.g. 'Summarize key findings in the financial report.'")
                 
-                submit_btn = gr.Button("Investigate", variant="primary")
+                submit_btn = gr.Button("Investigate", variant = "primary")
                 
             # right column for LLM params and answer output
-            with gr.Column(scale=2):
+            with gr.Column(scale = 2):
                 # LLM result and evaluation part
                 answer_output = gr.Markdown(
                     value = "<p style='color:grey;'>The answer will be shown here...</p>",
@@ -211,19 +228,19 @@ class AppUI:
                         label = "Step 3: Was this answer useful?"
                     )
                     eval_reason_textbox = gr.Textbox(
-                        label="Optional: Explain your evaluation",
-                        placeholder="Regarding your passing decision about the LLM answer: Please add your reason with max. 10 sentences. This is optional.",
-                        lines=5,  # Allows for multi-line input with a scrollbar
-                        interactive=True,
-                        visible=True
+                        label = "Optional: Explain your evaluation",
+                        placeholder = "Regarding your passing decision about the LLM answer: Please add your reason with max. 10 sentences. This is optional.",
+                        lines = 5,  # Allows for multi-line input with a scrollbar
+                        interactive = True,
+                        visible = True
                     )
                     evaluation_button = gr.Button("Submit Evaluation and Reset")
 
         # --- Event Handling ---
         file_uploader.upload(
-            fn=self._handle_file_validation,
-            inputs=[file_uploader],
-            outputs=[file_uploader]
+            fn = self._handle_file_validation,
+            inputs = [file_uploader],
+            outputs = [file_uploader]
         )
         
         submit_btn.click(
@@ -264,9 +281,9 @@ class AppUI:
         )
         
         reset_llm_button.click(
-            fn=lambda: (self.config.TEMPERATURE, self.config.TOP_P),
-            inputs=None,
-            outputs=[temperature_slider, top_p_slider]
+            fn = lambda: (self.config.TEMPERATURE, self.config.TOP_P),
+            inputs = None,
+            outputs = [temperature_slider, top_p_slider]
         )
 
 
@@ -284,8 +301,8 @@ class AppUI:
             )
             
             with gr.Accordion(
-                label='Option 1: Manual Analysis with Datasette',
-                open=True,
+                label = 'Option 1: Manual Analysis with Datasette',
+                open = True,
             ):
                 gr.Markdown(
                     """
@@ -302,15 +319,15 @@ class AppUI:
                 )
                 datasette_command = f"datasette {self.config.DB_FILE} --open"
                 gr.Textbox(
-                    value=datasette_command,
-                    label="Command to run Datasette",
-                    interactive=False,
-                    show_copy_button=True
+                    value = datasette_command,
+                    label = "Command to run Datasette",
+                    interactive = False,
+                    show_copy_button = True
                 )
             
             with gr.Accordion(
-                label="Option 2: Automated Data Profiling Report",
-                open=False,
+                label = "Option 2: Automated Data Profiling Report",
+                open = False,
             ):
                 gr.Markdown(
                     """
@@ -325,8 +342,8 @@ class AppUI:
                     4.  Export of profiling report is necessary to get all interactive features of this information.
                     """
                 )
-                profile_button = gr.Button("Generate/Refresh Profile Report", variant="primary")
-                export_html_button = gr.Button("Export to HTML", interactive=False)
+                profile_button = gr.Button("Generate/Refresh Profile Report", variant = "primary")
+                export_html_button = gr.Button("Export to HTML", interactive = False)
                 
                 with gr.Group():
                     profile_output = gr.HTML(
@@ -336,15 +353,15 @@ class AppUI:
 
            # Event handling for profiling section
             profile_button.click(
-                fn=self._handle_profile_generation,
-                inputs=None,
-                outputs=[profile_output, state_profile_report, export_html_button]
+                fn = self._handle_profile_generation,
+                inputs = None,
+                outputs = [profile_output, state_profile_report, export_html_button]
             )
 
             export_html_button.click(
-                fn=self._handle_export_html,
-                inputs=[state_profile_report],
-                outputs=None
+                fn = self._handle_export_html,
+                inputs = [state_profile_report],
+                outputs = None
             )
     
     
@@ -354,13 +371,13 @@ class AppUI:
         """
         csv_path = os.path.join("data", "evaluations.csv")
         gr.Info("Generating data profile... This may take a moment.")
-        profile = analysis.generate_profile_report(csv_path=csv_path)
+        profile = analysis.generate_profile_report(csv_path = csv_path)
 
         if profile:
-            return profile.to_html(), profile, gr.update(interactive=True)
+            return profile.to_html(), profile, gr.update(interactive = True)
         else:
             error_html = "<p style='color:red; text-align:center;'><b>Error:</b> Could not generate report. Please check if a none empty `data/evaluations.csv` exists.</p>"
-            return error_html, None, gr.update(interactive=False)
+            return error_html, None, gr.update(interactive = False)
 
         
     def _handle_export_html(self, profile: Optional[ProfileReport]) -> None:
@@ -372,7 +389,7 @@ class AppUI:
             return
 
         reports_dir = "reports"
-        os.makedirs(reports_dir, exist_ok=True)
+        os.makedirs(reports_dir, exist_ok = True)
         
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"profiling_report_{timestamp}.html"
@@ -383,7 +400,7 @@ class AppUI:
             logger.success(f"Successfully exported report to '{filepath}'.")
             gr.Info(f"Success! Report saved to: {filepath}")
         except Exception as e:
-            logger.error(f"Failed to export report to file. Error: {e}", exc_info=True)
+            logger.error(f"Failed to export report to file. Error: {e}", exc_info = True)
             gr.Error(f"Failed to save the report. Please check the logs.")    
 
 
@@ -406,13 +423,13 @@ class AppUI:
             logger.info("Performing immediate validation on uploaded files.")
             self.doc_processor.validate_files(files)
             logger.success("Immediate file validation passed.")
-            return files  # Success: Keep the valid files listed in the UI
+            return files  # Success: Keep valid files listed in UI
 
         except InvalidFileTypeException as e:
             logger.warning(f"User uploaded an invalid file type. Error: {e}")
             supported_types = ", ".join(self.config.SUPPORTED_FILE_TYPES)
             gr.Warning(f"Invalid File Type: {e} Please upload only supported file types: {supported_types}")
-            return None  # Failure: Returning None resets the file uploader
+            return None  # Failure: Returning None resets file uploader
 
 
     def _handle_investigation(self,
@@ -422,7 +439,8 @@ class AppUI:
                               top_p: float
     ) -> Tuple[Any, ...]:
         """
-        Orchestrates the main investigation workflow with dynamic LLM parameters.
+        Orchestrates main investigation workflow with dynamic LLM parameters by using Burr state machine.
+        Creates a fresh Burr app instance for each run to ensure isolation.
 
         Raises:
             gr.Error: If user inputs are invalid (no files, no prompt).
@@ -431,64 +449,55 @@ class AppUI:
             raise gr.Error("Please upload at least one document to investigate.")
         if not prompt.strip():
             raise gr.Error("Please enter a prompt to continue.")
+            
+        logger.info("UI: Start investigation via new fresh Burr state machine instance.")
+        self.burr_app = build_application(
+            config = self.config,
+            db_manager = self.db_manager,
+            doc_processor = self.doc_processor,
+            ai_service = self.ai_service,
+        )
 
-        logger.info(f"Starting investigation for prompt: '{prompt[:50]}...'")
-        doc_names = ", ".join([os.path.basename(f.name) for f in files])
+        inputs = {
+            "files": files,
+            "prompt": prompt,
+            "llm_params": {"temperature": temperature, "top_p": top_p}
+        }
+        
+        # state machine run until it halts or finishes
+        _, _, _ = self.burr_app.run(
+            halt_before = ["error"],
+            halt_after = ["await_human_evaluation", "end"],
+            inputs = inputs
+        )
+        
+        #  true, complete state from the application object itself
+        state_data = self.burr_app.state
+        
+        # validation or pre-processing error handling
+        # check for key that might be None
+        if state_data.get("error_message"):
+            raise gr.Error(state_data["error_message"])
 
-        try:
-            self.doc_processor.validate_files(files)
-            full_text = self.doc_processor.process_files(files)
-
-            # truncate context if exceeds configured limit
-            if len(full_text) > self.config.MAX_CONTEXT_CHARACTERS:
-                logger.warning(
-                    f"Context length ({len(full_text)}) exceeds limit. Truncating to {self.config.MAX_CONTEXT_CHARACTERS} characters.")
-                full_text = full_text[:self.config.MAX_CONTEXT_CHARACTERS]
-
-            answer = self.ai_service.get_answer(full_text, prompt, temperature, top_p)
-
-            # check if answer is real one or a pre-defined inappropriate response
-            is_real_answer = answer not in [self.config.UNKNOWN_ANSWER, self.config.NOT_ALLOWED_ANSWER] and "error" not in answer.lower()
-
-            if is_real_answer:
-                logger.success("Correct answer received. Displaying to user for evaluation.")
-                return (gr.update(value = answer),
-                        gr.update(visible = True),
-                        doc_names, 
-                        prompt, 
-                        answer, 
-                        temperature, 
-                        top_p)
-            else:
-                # automatic background logging for non-answers
-                logger.info(f"Pre-defined answer returned: '{answer}'. Logging automatically with 'no' evaluation.")
-                try:
-                    log_entry = InteractionLog(
-                        document_names = doc_names,
-                        prompt = prompt,
-                        answer = answer,
-                        output_passed = "no",
-                        eval_reason = "no reason given",
-                        model_name = self.config.LLM_MODEL_NAME,
-                        temperature = temperature,   # default is: self.config.TEMPERATURE,
-                        top_p = top_p   # default is: self.config.TOP_P
-                    )
-                    self.db_manager.log_interaction(log_entry)
-                except ValidationError as e:
-                    # critical developer error
-                    logger.critical(f"Pydantic validation failed for auto-log. Error: {e}")
-                
-                except sqlite3.Error as e:
-                    logger.error(f"Failed to auto-log non-answer to database. Error: {e}")
-                    # don't raise a gr.Error here, it's a background task
-                    
-                return gr.update(value = answer), gr.update(visible = False), None, None, None, None, None
-
-        except InvalidFileTypeException as e:
-            raise gr.Error(str(e))
-        except Exception as e:
-            logger.critical(f"An unexpected error occurred during investigation: {e}", exc_info = True)
-            raise gr.Error("An unexpected system error occurred. Please check the logs and try again.")
+        # UI update based on final state
+        if state_data.get("is_real_answer"):
+            logger.success("Burr flow halted for human evaluation. Updating UI.")
+            return (
+                gr.update(value = state_data["llm_answer"]),
+                gr.update(visible = True),
+                state_data["doc_names"],
+                state_data["prompt"],
+                state_data["llm_answer"],
+                temperature,
+                top_p
+            )
+        else: # auto_log_and_terminate as final step
+            logger.info("Burr flow finished (auto-logged or cache hit). Updating UI.")
+            return (
+                gr.update(value = state_data["llm_answer"]),
+                gr.update(visible = False),
+                None, None, None, None, None
+            )    
 
 
     def _handle_evaluation(self,
@@ -501,62 +510,44 @@ class AppUI:
                            top_p: float
     ) -> Tuple[Any, ...]:
         """
-        Handles user's evaluation submission, logs it, and resets the UI.
+        Handles user's evaluation submission by using Burr state machine.
+        Resumes the active Burr app and resets UI while preserving slider state.
         """
         if not choice:
             gr.Warning("Please select an evaluation passed option ('Yes' or 'No') before submitting.")
             # return no-op updates to keep UI state as-is
             return (gr.update(), gr.update(), gr.update(),
                     gr.update(visible = True),
-                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update())
+                    gr.update(), gr.update(), gr.update(),
+                    gr.update(), gr.update(),gr.update(),gr.update(),)
 
-        evaluation_text = "yes" if "✔️ Yes" in choice else "no"
-        reason_text = eval_reason.strip() if eval_reason and eval_reason.strip() else self.config.NO_REASON_GIVEN
-        logger.info(f"User submitted evaluation: '{evaluation_text}' with reason: '{reason_text[:50]}'. Logging to database.")
+        if not self.burr_app:
+            raise gr.Error("No active investigation to evaluate.")
 
-        try:
-            log_entry = InteractionLog(
-                document_names = doc_names,
-                prompt = prompt,
-                answer = answer,
-                output_passed = evaluation_text,
-                eval_reason = reason_text,
-                model_name = self.config.LLM_MODEL_NAME,
-                temperature = temperature,   # defautl is: self.config.TEMPERATURE,
-                top_p = top_p                # default is: self.config.TOP_P
-            )
-            self.db_manager.log_interaction(log_entry)
-            gr.Info("Evaluation saved! The interface has been reset for next investigation.")
-            
-            # returns tuple to reset all relevant UI items and states to initial values
-            return (
-                None,  # file_uploader
-                "",    # prompt_input
-                "<p style='color:grey;'>The answer will be shown here...</p>", # answer_output
-                gr.update(visible = False), # evaluation_panel
-                None,  # evaluation_radio
-                "",    # eval reason
-                None,  # state_doc_names
-                None,  # state_last_prompt
-                None,  # state_last_answer
-                gr.update(), gr.update(),  # persist temperature and top_p state
-                gr.update(), gr.update()   # persist slider UI values
-            )
+        logger.info("UI: Resuming Burr flow with human evaluation.")
         
-        except ValidationError as e:
-            logger.error(f"Pydantic validation failed on user evaluation. Error: {e}", exc_info=True)
-            gr.Error("Failed to save evaluation due to invalid data. Please check logs.")
-            # keep panel open and state intact for user to retry
-            return (gr.update(), gr.update(), gr.update(),
-                    gr.update(visible = True),
-                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), 
-                    gr.update(), gr.update(), gr.update(), gr.update())
+        # Burr app halted at 'await_human_evaluation',
+        # provide inputs for next step
+        inputs = {
+            "doc_names": doc_names,
+            "prompt": prompt,
+            "llm_answer": answer,
+            "llm_params": {"temperature": temperature, "top_p": top_p},
+            "evaluation_choice": choice,
+            "evaluation_reason": eval_reason
+        }
         
-        except sqlite3.Error as e:
-            logger.error(f"Failed to save evaluation to database. Error: {e}", exc_info = True)
-            gr.Error("Failed to save evaluation due to a database error. Please try again.")
-            # keep panel open and state intact for user to retry
-            return (gr.update(), gr.update(), gr.update(),
-                    gr.update(visible = True),
-                    gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), 
-                    gr.update(), gr.update(), gr.update(), gr.update())
+        # machine step forward to action 'process_human_evaluation'
+        self.burr_app.step(inputs = inputs)
+        # add additional step to ensure 'end' state is reached
+        self.burr_app.step()
+
+        gr.Info("Evaluation saved! The interface has been reset.")
+        
+        # complet UI reset
+        return (
+            None, "", "<p style='color:grey;'>The answer will be shown here...</p>",
+            gr.update(visible = False),
+            None, "", None, None, None,
+            gr.update(), gr.update()   # reset sliders to the last set values
+        )

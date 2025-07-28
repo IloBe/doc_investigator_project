@@ -5,8 +5,15 @@ Configuration module for the Document Investigator application.
 Defines a frozen dataclass to hold all application-wide configuration settings. 
 """
 
+# ----------
+# Imports
+# ----------
 from dataclasses import dataclass, field
 from typing import List
+
+# ----------
+# Coding
+# ----------
 
 @dataclass(frozen=True)
 class Config:
