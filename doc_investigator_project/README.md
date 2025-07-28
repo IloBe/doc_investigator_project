@@ -16,6 +16,7 @@ Starting point has been the implementation of a PoC Python 3.10.9 script. The tr
 Working with Gradio alone doesn't separate the business workflows and the UI, so, Burr is used to do just this. Its state machine concept makes debugging and testing much easier.
 
 The implemented business workflow including the main components is visualised in the following diagram:
+
 ![application workflow overview](../assets/doc_invest_workflow_diagram.png)
 <br>
 
@@ -41,6 +42,9 @@ These tests are designed to run in an async context to mimic the Gradio environm
 
 ### test_analysis.py
 Tests to cover the behaviour of the data analysis profiling part of creating and exporting an y-data report. File handling and data validation are taken into account.
+
+### test_state_machine.py
+Tests the core business logic behaviour by testing the flow of different actions and transitions to confirm the application makes the right decisions based on different inputs and states.
 
 ### pyproject.toml
 Explanations of the pytest configuration:
