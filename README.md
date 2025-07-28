@@ -28,40 +28,39 @@ As a summary, the Gradio application works with [burr](https://burr.dagworks.io/
 
 ## MVP Project Structure
 doc_investigator_project/<br>
-├── <your own created file: cert.pem>
-├── data/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes datasette evaluations.csv file<br>
-├── doc_investigator_prod.db&emsp;&ensp;# SQLite3 database<br>
-├── docker-compose.yml&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Needed for Burr dependencies (Jaeger UI, OpenTelemetry)<br>
-├── <your own created file: key.pem>
-├── logs/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes log files<br>
-├── otel-collector-config.yaml&nbsp;# Needed for Burr dependencies (OpenTelemetry)<br>
-├── reports/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes interactive .html profiling files of eval data<br>
+├── data/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes datasette evaluations.csv file<br>
+├── logs/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes log files<br>
+├── reports/&emsp;&emsp;&ensp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes interactive .html profiling files of eval data<br>
 ├── src/<br>
-│   ├── doc_investigator_strategy_pattern/<br>
-│   |   ├── __init__.py<br>
-│   |   ├── app.py&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;&ensp;# Contains the AppUI class (Gradio logic)<br>
-│   |   ├── config.py&emsp;&emsp;&emsp;&emsp;&ensp;&nbsp;# Contains the Config dataclass<br>
-│   |   ├── database.py&emsp;&emsp;&emsp;&ensp;# Contains the DatabaseManager class<br>
-│   |   ├── documents.py&emsp;&emsp;&ensp;# Contains all DocumentLoader strategies<br>
-│   |   ├── services.py&emsp;&emsp;&emsp;&emsp;# Contains the GeminiService class<br>
-│   |   ├── state_machine.py&emsp;&ensp;# Contains the Burr state machine logic<br>
-│   |   └── logging_config.py&emsp;# Contains the Loguru setup function<br>
-|   ├── main.py&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Main entry point to run the application<br>
-|   └── visualise_flow.py&ensp;# Burr feature to creates the workflow diagram
+│&emsp;&ensp;   ├── doc_investigator_strategy_pattern/<br>
+│&emsp;&ensp;   |&emsp;&ensp;   ├── __init__.py<br>
+│&emsp;&ensp;   |&emsp;&ensp;    ├── app.py&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;&ensp;# Contains the AppUI class (Gradio logic)<br>
+│&emsp;&ensp;   |&emsp;&ensp;    ├── config.py&emsp;&emsp;&emsp;&emsp;&ensp;&nbsp;# Contains the Config dataclass<br>
+│&emsp;&ensp;   |&emsp;&ensp;    ├── database.py&emsp;&emsp;&emsp;&ensp;# Contains the DatabaseManager class<br>
+│&emsp;&ensp;   |&emsp;&ensp;    ├── documents.py&emsp;&emsp;&ensp;# Contains all DocumentLoader strategies<br>
+│&emsp;&ensp;   |&emsp;&ensp;    ├── services.py&emsp;&emsp;&emsp;&emsp;# Contains the GeminiService class<br>
+│&emsp;&ensp;   |&emsp;&ensp;    ├── state_machine.py&emsp;&ensp;# Contains the Burr state machine logic<br>
+│&emsp;&ensp;   |&emsp;&ensp;    └── logging_config.py&emsp;# Contains the Loguru setup function<br>
+|&emsp;&ensp;   ├── main.py&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;&nbsp;# Main entry point to run the application<br>
+|&emsp;&ensp;   └── visualise_flow.py&ensp;&ensp;&emsp;&emsp;&ensp;&nbsp;# Burr feature to creates the workflow diagram<br>
 ├── tests/<br>
-│   ├── __init__.py<br>
-│   ├── conftest.py&emsp;&emsp;&emsp;&emsp;# Stops external FilterWarnings thrown in pytest run terminal<br>
-│   ├── test_analysis.py&emsp;&ensp;&ensp;# Pytest tests for the data analysis use cases<br>
-│   ├── test_database.py&emsp;&ensp;# Pytest tests for the DatabaseManager<br>
-│   ├── test_documents.py&ensp;# Pytest tests for DocumentProcessor validation<br>
-│   ├── test_app.py&emsp;&emsp;&emsp;&emsp;# Pytest tests for the AppUI logic (reset workflow)<br>
-│   ├── test_llm_behaviour.py&ensp;# Pytest tests for LLM behaviour validation<br>
-│   └── test_state_machine.py&ensp;# Pytest tests for Burr state machine<br>
-├── doc_investigator_prod.db&emsp;&nbsp;# SQLite database
-├── pyproject.toml&emsp;&emsp;&emsp;&nbsp;# Config file tells pytest where to find source code<br>
-├── requirements.txt&emsp;&emsp;&ensp;# Project dependencies<br>
-├── requirements-dev.txt&ensp;# Additional development dependencies<br>
-└── README.md&emsp;&emsp;&emsp;&emsp;# Instructions for setup and usage<br>
+│&emsp;&ensp;   ├── __init__.py<br>
+│&emsp;&ensp;   ├── conftest.py&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;# Stops external FilterWarnings thrown in pytest run terminal<br>
+│&emsp;&ensp;   ├── test_analysis.py&emsp;&ensp;&ensp;&emsp;&emsp;# Pytest tests for the data analysis use cases<br>
+│&emsp;&ensp;   ├── test_database.py&emsp;&ensp;&emsp;&emsp;# Pytest tests for the DatabaseManager<br>
+│&emsp;&ensp;   ├── test_documents.py&ensp;&emsp;&emsp;# Pytest tests for DocumentProcessor validation<br>
+│&emsp;&ensp;   ├── test_app.py&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;# Pytest tests for the AppUI logic (reset workflow)<br>
+│&emsp;&ensp;   ├── test_llm_behaviour.py&ensp;&ensp;# Pytest tests for LLM behaviour validation<br>
+│&emsp;&ensp;   └── test_state_machine.py&ensp;&ensp;# Pytest tests for Burr state machine<br>
+├── cert.pem&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;# your own created file<br>
+├── key.pem&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;# your own created file<br>
+├── otel-collector-config.yaml&nbsp;&emsp;&ensp;# Needed for Burr dependencies (OpenTelemetry)<br>
+├── docker-compose.yml&emsp;&emsp;&emsp;&nbsp;&ensp;# Needed for Burr dependencies (Jaeger UI, OpenTelemetry)<br>
+├── doc_investigator_prod.db&emsp;&nbsp;&ensp;# SQLite database<br>
+├── pyproject.toml&emsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&ensp;&ensp;# Config file tells pytest where to find source code<br>
+├── requirements.txt&emsp;&emsp;&ensp;&emsp;&emsp;&ensp;&ensp;# Project dependencies<br>
+├── requirements-dev.txt&ensp;&emsp;&emsp;&ensp;&ensp;# Additional development dependencies<br>
+└── README.md&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;&ensp;# Instructions for setup and usage<br>
 
 On the same level as project root are stored: Gradio-PoC .py file, license, assets directory and this readme file.
 
