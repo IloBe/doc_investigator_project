@@ -1,7 +1,8 @@
 # Document Investigation AI
 
-This interactive **<i>Gradio</i> application** allows users to upload documents of type <i>pdf, word doc, txt and excel</i> on the first **<i>Investigation'</i>** tab. Then the user can querying the document content using the Google Gemini API via user input prompts. If the user prompt task is not allowed, the user will be informed about it. In the positive case: Until the LLM output prompt is created, the specific UI text message "Your answer will appear here..." changes its colour to light grey. This can take a few seconds. At the same position, the final LLM result, the associated user evaluation window with its 'yes' or 'no' radio buttons and the optional task to add a reason for the evaluation passed decison pops up.<br>
+This interactive **<i>Gradio</i> application** allows users to upload documents of type <i>pdf, word doc, txt and excel</i> on the first **<i>Investigation'</i>** tab. Then the user can querying the document content using the <i>Google Gemini API</i> via user input prompts. If the user prompt task is not allowed, the user will be informed about it. In the positive case: Until the LLM output prompt is created, the specific UI text message "Your answer will appear here..." changes its colour to light grey. This can take a few seconds. At the same position, the final LLM result, the associated user evaluation window with its 'yes' or 'no' radio buttons and the optional task to add a reason for the evaluation passed decison pops up.<br>
 If a document with a wrong type shall be uploaded (e.g. png image), an error message appeared to inform the user which kind of document types are possible.<br>
+Having costs in mind, before the LLM starts creating an answer, a <i>simple hashkey cache</i> table is reviewed if a real answer already exists for this specific document and question. If yes, this answer will be shown. If no, the LLM tries to find an answer. 
 
 The second **<i>'Evaluation Analysis'</i>** tab is used for the required evaluation analysis workflow tasks. As a first option, the investigation and evaluation information triggered on the first tab can be monitored by a <i>Datasette</i> call to get the entire stored information of an <i>SQLite</i> database. This data shall be stored as <i>'evaluation.csv'</i> file in projects <i>'data'</i> directory. Afterwards as a second option, it is possible to create a **data profiling report**. Its overview is shown on that page, but not all interactive features can be triggered, therefore you can export this data report as an <i>'.html'</i> file into the <i>'reports'</i> directory to use all its features on your usual browser. 
 
@@ -11,7 +12,15 @@ Afterwards, this **PoC** approach has been transfered to an **MVP** project leve
 
 As a prerequisite, you need a **Google Gemini API Key**. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i> and source it or use the export CLI command mentioned below.
 
+Additionally, create private certificate files, because main call is using for browser app:<br>
+- ssl_keyfile = "./key.pem",<br>
+- ssl_certfile = "./cert.pem"
+
+You explicitly have to accept the risk message the browser will show after starting with localhost and port number.
+
+## Technical Details
 Further, detailed technical project and software information can be found in the second README file of the project folder **doc_investigator_project**.
+As a summary, the Gradio application works with [burr](https://burr.dagworks.io/) and its state machine concept to separate the UI from business logic.
 
 ## Application User Interface - Overview
 ![application user interface overview](./assets/doc_investigation_app.JPG)
@@ -19,7 +28,14 @@ Further, detailed technical project and software information can be found in the
 
 ## MVP Project Structure
 doc_investigator_project/<br>
+├── <your own created file: cert.pem>
+├── data/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes datasette evaluations.csv file<br>
+├── doc_investigator_prod.db&emsp;&ensp;# SQLite3 database<br>
+├── docker-compose.yml&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Needed for Burr dependencies (Jaeger UI, OpenTelemetry)<br>
+├── <your own created file: key.pem>
 ├── logs/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes log files<br>
+├── otel-collector-config.yaml&nbsp;# Needed for Burr dependencies (OpenTelemetry)<br>
+├── reports/&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Includes interactive .html profiling files of eval data<br>
 ├── src/<br>
 │   ├── doc_investigator_strategy_pattern/<br>
 │   |   ├── __init__.py<br>
@@ -28,20 +44,26 @@ doc_investigator_project/<br>
 │   |   ├── database.py&emsp;&emsp;&emsp;&ensp;# Contains the DatabaseManager class<br>
 │   |   ├── documents.py&emsp;&emsp;&ensp;# Contains all DocumentLoader strategies<br>
 │   |   ├── services.py&emsp;&emsp;&emsp;&emsp;# Contains the GeminiService class<br>
+│   |   ├── state_machine.py&emsp;&ensp;# Contains the Burr state machine logic<br>
 │   |   └── logging_config.py&emsp;# Contains the Loguru setup function<br>
-|   └── main.py&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Main entry point to run the application<br>
+|   ├── main.py&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&nbsp;# Main entry point to run the application<br>
+|   └── visualise_flow.py&ensp;# Burr feature to creates the workflow diagram
 ├── tests/<br>
 │   ├── __init__.py<br>
 │   ├── conftest.py&emsp;&emsp;&emsp;&emsp;# Stops external FilterWarnings thrown in pytest run terminal<br>
-│   └── test_analysis.py&emsp;&ensp;# Pytest tests for the data analysis use cases<br>
-│   └── test_database.py&emsp;&ensp;# Pytest tests for the DatabaseManager<br>
-│   └── test_documents.py&ensp;# Pytest tests for DocumentProcessor validation<br>
-│   └── test_app.py&emsp;&emsp;&emsp;&emsp;# Pytest tests for the AppUI logic (reset workflow)<br>
-│   └── test_llm_behaviour.py&ensp;# Pytest tests for LLM behaviour validation<br>
+│   ├── test_analysis.py&emsp;&ensp;&ensp;# Pytest tests for the data analysis use cases<br>
+│   ├── test_database.py&emsp;&ensp;# Pytest tests for the DatabaseManager<br>
+│   ├── test_documents.py&ensp;# Pytest tests for DocumentProcessor validation<br>
+│   ├── test_app.py&emsp;&emsp;&emsp;&emsp;# Pytest tests for the AppUI logic (reset workflow)<br>
+│   ├── test_llm_behaviour.py&ensp;# Pytest tests for LLM behaviour validation<br>
+│   └── test_state_machine.py&ensp;# Pytest tests for Burr state machine<br>
+├── doc_investigator_prod.db&emsp;&nbsp;# SQLite database
 ├── pyproject.toml&emsp;&emsp;&emsp;&nbsp;# Config file tells pytest where to find source code<br>
 ├── requirements.txt&emsp;&emsp;&ensp;# Project dependencies<br>
 ├── requirements-dev.txt&ensp;# Additional development dependencies<br>
 └── README.md&emsp;&emsp;&emsp;&emsp;# Instructions for setup and usage<br>
+
+On the same level as project root are stored: Gradio-PoC .py file, license, assets directory and this readme file.
 
 ## How to Generate and Run the Code
 ### Setup
@@ -55,13 +77,13 @@ doc_investigator_project/<br>
 2.  **Create a virtual environment and install dependencies**
     ```bash
     python -m venv .venv
-    source .venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    source .venv/bin/activate  # On Windows, use `.venv\Scripts\activate`
     pip install -r requirements.txt
     ```
     
     Or if you need the development environment:
     ```bash
-    pip install -r requirements.txt
+    pip install -r requirements-dev.txt
     ```
 
 4.  **Set your API Key**
@@ -71,11 +93,13 @@ doc_investigator_project/<br>
     ```
 
 ### Run the Application
-Execute the main entry point script for the entire multi-file application with Uvicorn as lightning-fast ASGI server:
+Application UI and business workflow are separated by <i>Burr</i> state machine and for observability <i>OpenTelemetry</i> is added via Docker. So, for implementation <i>Docker Desktop</i> has to run.
+
 Being in the projects directory, call main.py file on terminal:
 ```bash
 python3 src/main.py
 ```
+The Gradio application creates an encrypted (HTTPS/WSS) connection that will bypass a firewall's web filter, so, it didn't stuck in loading (but private certificates have to be explicitly accepted). It uses localhost URL: http://127.0.0.1:7861.
 
 Execute the PoC script file, which has been the starting point of the project to get an impression of the application:
 ```bash

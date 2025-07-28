@@ -7,11 +7,18 @@ Provides functions to perform data profiling on evaluation data,
 encapsulating the logic for reading, processing and generating reports.
 """
 
+# ----------
+# Imports
+# ----------
 import os
 import pandas as pd
 from loguru import logger
 from ydata_profiling import ProfileReport
 from typing import Optional
+
+# ----------
+# Coding
+# ----------
 
 def generate_profile_report(csv_path: str) -> Optional[ProfileReport]:
     """

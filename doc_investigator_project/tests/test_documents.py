@@ -4,12 +4,18 @@
 Unit tests for the DocumentProcessor and its strategies.
 """
 
+# ----------
+# Imports
+# ----------
 import pytest
 import sys
 import os
 
 from doc_investigator_strategy_pattern.documents import DocumentProcessor, InvalidFileTypeException
 
+# ----------
+# Coding
+# ----------
 
 # A fixture to provide a configured DocumentProcessor instance
 @pytest.fixture

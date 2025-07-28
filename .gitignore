@@ -4,6 +4,9 @@
 ./data/*.*
 ./doc_investigator_prod.db
 ./doc_investigator_project/doc_investigator_prod.db
+./doc_investigator_project/cert.pem
+./doc_investigator_project/key.pem
+./doc_investigator_package-lock.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -14,12 +14,19 @@ uses to capture logs. Then use logger.add() to tell loguru to send all its
 logs directly to this handler.
 """
 
+# ----------
+# Imports
+# ----------
 import pytest
 import pandas as pd
 from loguru import logger
 from unittest.mock import patch, MagicMock
 
 from doc_investigator_strategy_pattern import analysis
+
+# ----------
+# Coding
+# ----------
 
 @pytest.fixture
 def mock_valid_csv(tmp_path):

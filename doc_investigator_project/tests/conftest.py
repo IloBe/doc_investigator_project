@@ -8,6 +8,7 @@ hooks and fixtures that apply to all tests.
 """
 
 import warnings
+from pydantic.warnings import PydanticDeprecatedSince20, PydanticDeprecatedSince211
 
 def pytest_configure(config):
     """
@@ -21,31 +22,45 @@ def pytest_configure(config):
     """
     warnings.filterwarnings(
         "ignore",
-        message="websockets.legacy is deprecated",
-        category=DeprecationWarning
+        message = "websockets.legacy is deprecated",
+        category = DeprecationWarning
     )
     warnings.filterwarnings(
         "ignore",
-        message="There is no current event loop",
-        category=DeprecationWarning
+        message = "There is no current event loop",
+        category = DeprecationWarning
     )
     warnings.filterwarnings(
         "ignore",
-        message="websockets.server.WebSocketServerProtocol is deprecated",
-        category=DeprecationWarning
+        message = "websockets.server.WebSocketServerProtocol is deprecated",
+        category = DeprecationWarning
     )
     warnings.filterwarnings(
         "ignore",
-        message="builtin type SwigPyPacked has no __module__ attribute",
-        category=DeprecationWarning
+        message = "builtin type SwigPyPacked has no __module__ attribute",
+        category = DeprecationWarning
     )
     warnings.filterwarnings(
         "ignore",
-        message="builtin type SwigPyObject has no __module__ attribute",
-        category=DeprecationWarning
+        message = "builtin type SwigPyObject has no __module__ attribute",
+        category = DeprecationWarning
     )
     warnings.filterwarnings(
         "ignore",
-        message="builtin type swigvarlink has no __module__ attribute",
-        category=DeprecationWarning
+        message = "builtin type swigvarlink has no __module__ attribute",
+        category = DeprecationWarning
+    )
+
+    # Filter for Pydantic
+    warnings.filterwarnings(
+        "ignore",
+        message = "Support for class-based `config` is deprecated, use ConfigDict instead.*",
+        category = PydanticDeprecatedSince20
+    )
+
+    # Filter for Burr integration's use of `model_fields`
+    warnings.filterwarnings(
+        "ignore",
+        message = "Accessing the 'model_fields' attribute on the instance is deprecated.*",
+        category = PydanticDeprecatedSince211  # Matches the category pytest identifies
     )

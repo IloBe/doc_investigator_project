@@ -13,7 +13,6 @@ google-generativeai==0.8.5   # The official Google Gemini API client library
 
 # --- UI and Web Server ---
 gradio==5.37.0               # The web UI framework
-uvicorn==0.35.0              # ASGI server to run the Gradio application
 
 # --- Document Processing ---
 openpyxl==3.1.2              # For reading and processing .xlsx Excel files
@@ -31,3 +30,6 @@ pandas==2.3.1                # For synchronous dataframe handling
 ydata-profiling==4.16.1      # Tool to show interactive EDA
 Jinja2==3.1.6                # Often a dependency of profiling, good to pin
 scipy==1.15.3                # Dependency of ydata-profiling
+
+# --- State Management ---
+burr[start]                  # Separates business logic and UI, installs several dependencies
