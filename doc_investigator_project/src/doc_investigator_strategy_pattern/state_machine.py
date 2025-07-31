@@ -3,6 +3,15 @@
 """
 Defines the Burr state machine for orchestrating the document investigation workflow
 and the caching mechanism for LLM prompt results.
+OpenTelemetry traces are logging to Burr, visible via Burr UI as backend, that is called
+with 'burr' CLI command on a second terminal in parallel to the app. The browser tab
+opens automatically.
+
+See: 
+- https://blog.dagworks.io/p/9ef2488a-ff8a-4feb-b37f-1d9a781068ac
+- https://blog.dagworks.io/p/burr-ui
+- https://github.com/apache/burr/blob/main/examples/opentelemetry/application.py
+
 
 Have in mind, when standard @action is executed, Burr passes the state to the function
 as its own burr.core.state.State object, which must be handled like a dictionary,
@@ -23,6 +32,7 @@ from burr.core import Action, State, ApplicationBuilder, default, when
 from burr.core.action import action
 # with our own pydantic basemodel we need a typing for our state object
 from burr.integrations.pydantic import PydanticTypingSystem
+from opentelemetry import trace
 from loguru import logger
 from pydantic import ValidationError
 
@@ -290,12 +300,16 @@ def build_application(
     config: Config,
     db_manager: DatabaseManager,
     doc_processor: DocumentProcessor,
-    ai_service: GeminiService
+    ai_service: GeminiService,
 ) -> "Application":
     return (
         ApplicationBuilder()
         .with_typing(PydanticTypingSystem(InvestigationState))  # informs about shape and schema of state
         .with_state(InvestigationState())                       # Pydantic model initialisation
+        .with_tracker(                                          # for OpenTelemetry tracer integration:
+            project = "doc-investigator",                       # all state machine actions are traced 
+            params = {"storage_dir": "./.burr"}                 # as spans automatically; burr UI as backend
+        )
         .with_actions(
             process_inputs = process_inputs.bind(doc_processor = doc_processor),
             process_documents = process_documents.bind(doc_processor = doc_processor, config = config),
@@ -314,11 +328,11 @@ def build_application(
             ("process_inputs", "error", when(outcome = "failure")),
             ("process_documents", "check_cache"),
 
-            # path 1: Cache Miss
+            # path 1: cache Miss
             ("check_cache", "generate_answer", when(hit = False)),
             ("generate_answer", "classify_answer"), # classify if it is a real result
 
-            # path 2: Cache Hit
+            # path 2: cache Hit
             ("check_cache", "classify_answer", when(hit = True)),  # skip answer creation
 
             # classification path

@@ -211,7 +211,7 @@ class AppUI:
                 prompt_input = gr.Textbox(
                     label = "Step 2: Enter Your Prompt",
                     lines = 4,
-                    placeholder = "e.g. 'Summarize key findings in the financial report.'")
+                    placeholder = "e.g. 'Summarize key findings in the risk report.'")
                 
                 submit_btn = gr.Button("Investigate", variant = "primary")
                 
@@ -457,7 +457,7 @@ class AppUI:
             doc_processor = self.doc_processor,
             ai_service = self.ai_service,
         )
-
+        
         inputs = {
             "files": files,
             "prompt": prompt,

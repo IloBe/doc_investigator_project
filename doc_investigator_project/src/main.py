@@ -4,7 +4,7 @@
 """
 Main entry point for the Document Investigator application.
 
-This script initializes all core components and starts the Uvicorn server
+This script initializes all core components
 to serve the Gradio-based user interface.
 """
 
@@ -134,7 +134,7 @@ def initialize_app() -> gr.Blocks:
 
 
 # var name 'app' is default Uvicorn looks for,
-# but skipped uvicorn, gradio stucked in loading
+# but skipped uvicorn, because gradio stucked in loading
 app = initialize_app()
 
 if __name__ == "__main__":
