@@ -106,7 +106,7 @@ def setup_logging(config: Config) -> None:
         compression = "zip", # compress old log files
         enqueue = True,      # make logging thread-safe
         serialize = False,   # True for JSON-structured logs
-        diagnose = True      # make tracebacks pickleable
+        diagnose = False      # make tracebacks pickleable; 'True' not working in Python native traceback
     )
 
     logger.info("Logger has been initialized successfully with retention policy of 5 files.")

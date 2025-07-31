@@ -1,4 +1,6 @@
 # project specific
+./.burr/*.*
+./.gradio/*.*
 ./logs/*.*
 ./reports/*.*
 ./data/*.*
