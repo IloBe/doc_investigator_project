@@ -24,7 +24,7 @@ As a summary, the Gradio application works with [burr](https://burr.dagworks.io/
 
 ## Application User Interface - Overview
 <p align="left">
-  <img src="./assets/doc_investigation_app.JPG" alt="application user interface overview" width="75%"/>
+  <img src="./assets/doc_investigation_app_MVP-withLLMSliders.JPG" alt="application user interface overview" width="75%"/>
 </p>
 <br>
 
@@ -92,7 +92,10 @@ On the same level as project root are stored: Gradio-PoC .py file, license, asse
     ```
 
 ### Run the Application
-Application UI and business workflow are separated by <i>Burr</i> state machine and for observability <i>OpenTelemetry</i> is added via Docker. So, for implementation <i>Docker Desktop</i> has to run.
+Application UI and business workflow are separated by <i>Burr</i> state machine and for observability <i>OpenTelemetry</i> is added. OpenTelemetry traces are logged to <i>Burr UI</i> which can be started automatically via separate terminal CLI command in the projects directory
+```bash
+burr
+```
 
 Being in the projects directory, call main.py file on terminal:
 ```bash
