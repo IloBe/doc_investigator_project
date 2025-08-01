@@ -8,7 +8,7 @@ The second **<i>'Evaluation Analysis'</i>** tab is used for the required evaluat
 
 As a starting point for this use case, a single script PoC file has been generated. An example .pdf document about a movie dataset has been added to get a first manual impression of application and evaluation usage.
 
-Afterwards, this **PoC** approach has been transfered to an **MVP** project level. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. Furthermore, a unit test suite for database handling, some UI workflows and basic LLM behaviour as test examples are added. Have in mind, that because of the LLM tests, we will not always reach a 100% test coverage.
+Afterwards, this **PoC** approach shall be transfered to an **MVP** project level by small steps, several features are still open. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. Furthermore, a unit test suite for database handling, some UI workflows and basic LLM behaviour as test examples are added. Have in mind, that because of the LLM tests, we will not always reach a 100% test coverage.
 
 As a prerequisite, you need a **Google Gemini API Key**. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i> and source it or use the export CLI command mentioned below.
 
@@ -23,7 +23,9 @@ Further, detailed technical project and software information can be found in the
 As a summary, the Gradio application works with [burr](https://burr.dagworks.io/) and its state machine concept to separate the UI from business logic.
 
 ## Application User Interface - Overview
-![application user interface overview](./assets/doc_investigation_app.JPG)
+<p align="left">
+  <img src="./assets/doc_investigation_app.JPG" alt="application user interface overview" width="75%"/>
+</p>
 <br>
 
 ## MVP Project Structure
@@ -54,8 +56,6 @@ doc_investigator_project/<br>
 │&emsp;&ensp;   └── test_state_machine.py&ensp;&ensp;# Pytest tests for Burr state machine<br>
 ├── cert.pem&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;# your own created file<br>
 ├── key.pem&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&ensp;# your own created file<br>
-├── otel-collector-config.yaml&nbsp;&emsp;&ensp;# Needed for Burr dependencies (OpenTelemetry)<br>
-├── docker-compose.yml&emsp;&emsp;&emsp;&nbsp;&ensp;# Needed for Burr dependencies (Jaeger UI, OpenTelemetry)<br>
 ├── doc_investigator_prod.db&emsp;&nbsp;&ensp;# SQLite database<br>
 ├── pyproject.toml&emsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&ensp;&ensp;# Config file tells pytest where to find source code<br>
 ├── requirements.txt&emsp;&emsp;&ensp;&emsp;&emsp;&ensp;&ensp;# Project dependencies<br>
@@ -119,7 +119,9 @@ It will use <i>pytest-asyncio</i> to correctly run both synchronous and asynchro
 
 ### Observe the Logged Data
 #### Application User Interface - Evaluation Analysis
-![application user interface for tab 2 evaluation analysis](./assets/doc_invest_eval_analyse-datasette.JPG)
+<p align="left">
+  <img src="./assets/doc_invest_eval_analyse-datasette.JPG" alt="application user interface for tab 2 evaluation analysis" width="75%"/>
+</p>
 <br>
 
 #### Option 1 - Datasette
@@ -137,8 +139,12 @@ This CLI command will launch a web server and open a new browser tab. You will s
 #### Option 2 - Data Profiling Report
 After having stored the <i>'evaluation.csv'</i> file in the appropriate directory a data profiling report can be created, visualised and exported. The export is necessary, if you want to use all interactive features of the report file. During the export process a specific process information is visible including the reports label with timestamp. 
 
-![application user interface for tab 2 evaluation analysis](./assets/doc_invest_eval_analyse-reports-1.JPG)
+<p align="left">
+  <img src="./assets/doc_invest_eval_analyse-reports-1.JPG" alt="application user interface for tab 2 evaluation analysis" width="75%"/>
+</p>
 <br>
 
-![application user interface for tab 2 evaluation analysis](./assets/doc_invest_eval_analyse-reports-3.JPG)
+<p align="left">
+  <img src="./assets/doc_invest_eval_analyse-reports-3.JPG" alt="application user interface for tab 2 evaluation analysis" width="25%"/>
+</p>
 <br>
