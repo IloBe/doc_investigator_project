@@ -17,7 +17,9 @@ Working with Gradio alone doesn't separate the business workflows and the UI, so
 
 The implemented business workflow including the main components is visualised in the following diagram:
 
-![application workflow overview](../assets/doc_invest_workflow_diagram.png)
+<p align="left">
+  <img src="../assets/doc_invest_workflow_diagram.png" alt="application workflow overview" width="75%"/>
+</p>
 <br>
 
 ## Testing: Classical Software
