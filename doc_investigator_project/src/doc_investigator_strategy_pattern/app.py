@@ -180,7 +180,7 @@ class AppUI:
                 with gr.Accordion(f"LLM Settings ({self.config.LLM_MODEL_NAME})", open=False):
                     temperature_slider = gr.Slider(
                         minimum = 0.0,
-                        maximum = 1.0,
+                        maximum = 2.0,
                         step = 0.05,
                         label = "Temperature",
                         value = self.config.TEMPERATURE
