@@ -70,11 +70,6 @@ def setup_logging(config: Config) -> None:
         pass
     
     # --- loguru configuration ---
-    #log_format = (
-    #    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
-    #    "<level>{level: <8}</level> | "
-    #    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>"
-    #)
     log_format = (
         "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
         "<level>{level: <8}</level> | "
@@ -106,7 +101,7 @@ def setup_logging(config: Config) -> None:
         compression = "zip", # compress old log files
         enqueue = True,      # make logging thread-safe
         serialize = False,   # True for JSON-structured logs
-        diagnose = False      # make tracebacks pickleable; 'True' not working in Python native traceback
+        diagnose = False     # make tracebacks pickleable; 'True' not working in Python native traceback
     )
 
     logger.info("Logger has been initialized successfully with retention policy of 5 files.")
