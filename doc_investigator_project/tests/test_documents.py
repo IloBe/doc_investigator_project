@@ -104,4 +104,4 @@ def test_loader_strategy_for_nonexistent_file(doc_processor, tmp_path):
     # Assert
     # expect an error message inside the content, not an exception
     result = doc_processor.process_files(files)
-    assert "[Error processing TXT: nonexistent.txt]" in result, "Error message of non existing file not as expected"
+    assert "[Error: File not found: nonexistent.txt]" in result, "Error message of non existing file not as expected"
