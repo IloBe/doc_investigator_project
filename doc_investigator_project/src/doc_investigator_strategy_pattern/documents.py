@@ -18,7 +18,7 @@ Classes:
 # ----------
 import abc
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Iterator, Generator
 
 import docx
 import fitz  # PyMuPDF
@@ -49,55 +49,100 @@ class PDFLoaderStrategy(DocumentLoaderStrategy):
         try:
             text = ""
             with fitz.open(file_path) as doc:
-                for page in doc:
-                    text += page.get_text()
+                content = "\n".join(page.get_text() for page in doc)
+                
             logger.debug(f"Successfully extracted text from PDF: {os.path.basename(file_path)}")
-            return text
-        except (FileNotFoundError, fitz.fitz.PyMuPDFError) as e:
-            logger.error(f"Error loading PDF '{file_path}': {e}", exc_info=True)
-            return f"[Error processing PDF: {os.path.basename(file_path)} - The file may be corrupt or unreadable.]"
+            return content
+        except fitz.fitz.PyMuPDFError as e:  # specific error class for PyMuPDF (corrupt files, password protection, ...)
+            logger.error(f"Error loading PDF: '{file_path}': {e}", exc_info = True)
+            return f"[Error processing PDF: {os.path.basename(file_path)} - The file may be corrupt, password-protected or unreadable.]"
+        except (FileNotFoundError) as e:
+            logger.error(f"Error PDF file not found '{file_path}': {e}", exc_info = True)
+            return f"[Error PDF file not found: {os.path.basename(file_path)}.]"
 
 class DocxLoaderStrategy(DocumentLoaderStrategy):
-    """Strategy for loading text from DOCX files."""
+    """Strategy for loading text from DOCX files, extracting paragraphs and tables."""
+    
+    def _iter_text(self, doc) -> Generator[str, None, None]:
+        """Generator to yield all text blocks from paragraphs and tables."""
+        # paragraphs
+        for para in doc.paragraphs:
+            yield para.text   
+        # text from tables
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    # join cell text with space or tab
+                    yield cell.text
+    
     def load(self, file_path: str) -> str:
         try:
             doc = docx.Document(file_path)
-            full_text = [para.text for para in doc.paragraphs]
-            logger.debug(f"Successfully extracted text from DOCX: {os.path.basename(file_path)}")
-            return "\n".join(full_text)
-        except (FileNotFoundError, Exception) as e: # python-docx can have various errors
-            logger.error(f"Error loading DOCX '{file_path}': {e}", exc_info=True)
+            content = "\n".join(self._iter_text(doc))
+            logger.debug(f"Successfully extracted text from paragraphs and tables in DOCX: {os.path.basename(file_path)}")
+            return content
+            
+        except (FileNotFoundError, docx.opc.exceptions.PackageNotFoundError):
+            logger.error(f"File not found or is not a valid DOCX: '{file_path}'")
+            return f"[Error: File not found or is not a valid DOCX file {os.path.basename(file_path)}]"
+        except Exception as e:
+            logger.error(f"Error loading DOCX '{file_path}': {e}", exc_info = True)
             return f"[Error processing DOCX: {os.path.basename(file_path)} - The file may be corrupt or incompatible.]"
 
 class TextLoaderStrategy(DocumentLoaderStrategy):
-    """Strategy for loading text from TXT files."""
+    """Strategy for loading text from TXT files line by line, returns a single string whith whole content by success."""
     def load(self, file_path: str) -> str:
         try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-            logger.debug(f"Successfully extracted text from TXT: {os.path.basename(file_path)}")
+            with open(file_path, 'r', encoding = 'utf-8', errors = 'ignore') as f:
+                # consumes file's iterator and joins all lines
+                content = "".join(f)
+            
+            logger.debug(f"Successful extracted all lines from TXT: {os.path.basename(file_path)}")
             return content
-        except (FileNotFoundError, IOError) as e:
-            logger.error(f"Error loading TXT '{file_path}': {e}", exc_info=True)
-            return f"[Error processing TXT: {os.path.basename(file_path)}]"
+        except FileNotFoundError:
+            logger.error(f"File not found: '{file_path}'")
+            return f"[Error: File not found: {os.path.basename(file_path)}]"
+        except IOError as e:
+            logger.error(f"Error reading TXT '{file_path}': {e}", exc_info = True)
+            return f"[Error read processing TXT: {os.path.basename(file_path)}]"
+        except Exception as e:
+            logger.error(f"An unexpected error occurred with '{file_path}': {e}", exc_info = True)
+            return f"[Error: An unexpected issue occurred with {os.path.basename(file_path)}]"
 
 class ExcelLoaderStrategy(DocumentLoaderStrategy):
-    """Strategy for loading text from XLSX files."""
+    """Strategy for loading text from XLSX files resp. its sheets."""
     def load(self, file_path: str) -> str:
         try:
-            workbook = openpyxl.load_workbook(file_path)
-            content = []
-            for sheet_name in workbook.sheetnames:
-                content.append(f"--- Sheet: {sheet_name} ---")
-                sheet = workbook[sheet_name]
-                for row in sheet.iter_rows():
-                    row_text = "\t".join([str(cell.value) if cell.value is not None else "" for cell in row])
-                    content.append(row_text)
+            workbook = openpyxl.load_workbook(file_path, read_only = True)
+
+            # generator usage for sheets and cells; loads one row at a time for constant O(1)
+            def content_generator():
+                for sheet_name in workbook.sheetnames:
+                    yield f"--- Sheet: {sheet_name} ---"
+                    sheet = workbook[sheet_name]
+                    for row in sheet.iter_rows():
+                        row_text = "\t".join(
+                            str(cell.value) if cell.value is not None else ""
+                            for cell in row
+                        )
+                        yield row_text
+        
+            # generator consumed, building final string
             logger.debug(f"Successfully extracted text from XLSX: {os.path.basename(file_path)}")
-            return "\n".join(content)
-        except (FileNotFoundError, Exception) as e: # openpyxl can raise various errors
-            logger.error(f"Error loading XLSX '{file_path}': {e}", exc_info=True)
-            return f"[Error processing XLSX: {os.path.basename(file_path)} - File may be corrupt.]"
+            return "\n".join(content_generator())
+            
+        except FileNotFoundError as e: # openpyxl can raise various errors
+            logger.error(f"Error loading XLSX '{file_path}': {e}", exc_info = True)
+            return f"Error processing XLSX: {os.path.basename(file_path)} - File may be corrupt."
+        except Exception as e:
+            logger.error(f"Failed to extract text from XLSX {os.path.basename(file_path)}: {e}")
+            # Depending on requirements, you might want to return "" or re-raise
+            return f"Failed to extract text from XLSX {os.path.basename(file_path)}: {e}"
+        finally:
+            # workbook closing to release file handle
+            if 'workbook' in locals() and workbook is not None:
+                workbook.close() # read_only mode: openpyxl requires explicit closing
+                logger.debug(f"Successfully extracted text and closed workbook: {os.path.basename(file_path)}")
 
 
 # --- Main Processor (Context Class) ---
@@ -166,7 +211,7 @@ class DocumentProcessor:
             _, file_extension = os.path.splitext(file_path)
 
             strategy = self._strategies.get(file_extension.lower())
-            # This check is a safeguard, though validation should prevent this.
+            # safeguard check, though validation should prevent this behaviour
             if not strategy:
                 logger.warning(f"No loader strategy found for validated file '{file_name}'. Skipping.")
                 continue
