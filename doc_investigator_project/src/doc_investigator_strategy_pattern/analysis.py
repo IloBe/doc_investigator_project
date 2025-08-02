@@ -49,22 +49,23 @@ def generate_profile_report(csv_path: str) -> Optional[ProfileReport]:
         logger.debug("CSV data loaded successfully. Generating ydata-profiling report...")
         profile = ProfileReport(
             df,
-            title="Document Investigator - Evaluation Data Profiling Report",
-            explorative=True,
+            title = "Document Investigator - Evaluation Data Profiling Report",
+            explorative = True,
         )
 
         #html_report = profile.to_html()
         logger.success("Successfully generated data profile report.")
+        del df
         return profile
 
     except FileNotFoundError as e:
-        logger.error(f"Data profiling error: {e}", exc_info=True)
+        logger.error(f"Data profiling error: {e}", exc_info = True)
         return None
     
     except pd.errors.EmptyDataError as e:
-        logger.error(f"CSV file '{csv_path}' is empty or corrupted: {e}.", exc_info=True)
+        logger.error(f"CSV file '{csv_path}' is empty or corrupted: {e}.", exc_info = True)
         return None
 
     except Exception as e:
-        logger.critical(f"An unexpected error occurred during profile generation: {e}", exc_info=True)
+        logger.critical(f"An unexpected error occurred during profile generation: {e}", exc_info = True)
         return None
