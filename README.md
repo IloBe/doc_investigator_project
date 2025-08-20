@@ -10,7 +10,7 @@ The second **<i>'Evaluation Analysis'</i>** tab is used for the required evaluat
 
 As a starting point for this use case, a single script PoC file has been generated. An example .pdf document about a movie dataset has been added to get a first manual impression of application and evaluation usage.
 
-Afterwards, this **PoC** approach shall be transfered to an **MVP** project level by small steps, several features are still open. The project application features a robust architecture regarding SOLID principles, comprehensive exception handling and logging. Furthermore, a unit test suite for database handling, some UI workflows and basic LLM behaviour as test examples are added. Have in mind, that because of the LLM tests, we will not always reach a 100% test coverage.
+Afterwards, this **PoC** approach shall be transfered to an **MVP** project level by small steps, several features are still open. The project application shall feature a robust architecture regarding SOLID principles, comprehensive exception handling and logging. Furthermore, a unit test suite for database handling, some UI workflows and basic LLM behaviour as test examples are added. Have in mind, that because of the LLM tests, we will not always reach a 100% test coverage. Having started as a Gradio app, it is still not at this point, because Gradio has a number of vulnerabilities. It is not a tool to be used in a more professional environment.
 
 As a prerequisite, you need a **Google Gemini API Key**. Put it in your own created .env file (same level as doc_investigator_project) as <i>export GOOGLE_API_KEY='your-own-key'</i> and source it or use the export CLI command mentioned below.
 
