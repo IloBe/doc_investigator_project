@@ -1,3 +1,5 @@
+[![Known Vulnerabilities](https://snyk.io/test/github/IloBe/doc_investigator_project/badge.svg?style=flat-square)](https://snyk.io/test/github/IloBe/doc_investigator_project)
+
 # Document Investigation AI
 
 This interactive **<i>Gradio</i> application** allows users to upload documents of type <i>pdf, word doc, txt and excel</i> on the first **<i>Investigation'</i>** tab. Then the user can querying the document content using the <i>Google Gemini API</i> via user input prompts. If the user prompt task is not allowed, the user will be informed about it. In the positive case: Until the LLM output prompt is created, the specific UI text message "Your answer will appear here..." changes its colour to light grey. This can take a few seconds. At the same position, the final LLM result, the associated user evaluation window with its 'yes' or 'no' radio buttons and the optional task to add a reason for the evaluation passed decison pops up.<br>
