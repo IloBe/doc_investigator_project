@@ -24,7 +24,7 @@ loguru==0.7.3                # A logging library
 pydantic==2.11.7             # A library for data validation
 
 # --- Local Data Analysis ---
-datasette==0.65.1            # Tool to instantly explore and analyze the SQLite database
+datasette==0.65.2            # Tool to instantly explore and analyze the SQLite database
 numpy==2.1.3                 # Tool for scientific computing with Python
 pandas==2.3.1                # For synchronous dataframe handling
 ydata-profiling==4.16.1      # Tool to show interactive EDA
