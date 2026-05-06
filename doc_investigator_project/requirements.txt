@@ -12,11 +12,11 @@
 google-generativeai==0.8.5   # The official Google Gemini API client library
 
 # --- UI and Web Server ---
-gradio==5.37.0               # The web UI framework
+gradio==6.7.0               # The web UI framework
 
 # --- Document Processing ---
 openpyxl==3.1.2              # For reading and processing .xlsx Excel files
-PyMuPDF==1.26.3              # For extracting text from .pdf files via fitz
+PyMuPDF==1.27.1              # For extracting text from .pdf files via fitz
 python-docx==1.2.0           # For reading and processing .docx Word files
 
 # --- Utilities ---
@@ -34,3 +34,4 @@ scipy==1.15.3                # Dependency of ydata-profiling
 # --- State Management ---
 burr[start]                  # Separates business logic and UI, installs several dependencies
 protobuf>=6.33.5 # not directly required, pinned by Snyk to avoid a vulnerability
+pillow>=12.1.1 # not directly required, pinned by Snyk to avoid a vulnerability
