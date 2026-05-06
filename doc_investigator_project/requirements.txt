@@ -33,4 +33,5 @@ scipy==1.15.3                # Dependency of ydata-profiling
 
 # --- State Management ---
 burr[start]                  # Separates business logic and UI, installs several dependencies
+protobuf>=6.33.5 # not directly required, pinned by Snyk to avoid a vulnerability
 pillow>=12.1.1 # not directly required, pinned by Snyk to avoid a vulnerability
