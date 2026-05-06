@@ -12,7 +12,7 @@
 -r ./requirements.txt
 
 # --- Testing Framework ---
-pytest==8.4.1                # The core framework for running our tests
+pytest==9.0.3                # The core framework for running our tests
 pytest-asyncio==1.0.0       # Plugin to handle async functions (for AppUI tests)
 pytest-cov==6.2.1            # Plugin for measuring code coverage with our tests
 pytest-mock==3.14.1          # Provides the 'mocker' fixture for creating mock objects
